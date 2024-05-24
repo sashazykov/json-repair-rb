@@ -1,0 +1,7 @@
+module JSON
+  module Repair
+    VERSION: String
+
+    def self.repair(String) -> ?String
+  end
+end

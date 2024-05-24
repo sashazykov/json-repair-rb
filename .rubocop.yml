@@ -1,0 +1,42 @@
+AllCops:
+  TargetRubyVersion: 3.0
+
+Metrics/BlockLength:
+  Exclude:
+    - spec/**/*
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/ClassLength:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/AbcSize:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/MethodLength:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/BlockLength:
+  Exclude:
+    - lib/json/repair/repairer.rb
+    - spec/**/*
+
+Metrics/BlockNesting:
+  Exclude:
+    - lib/json/repair/repairer.rb
+
+Metrics/ModuleLength:
+  Exclude:
+    - lib/json/repair/string_utils.rb
