@@ -1,4 +1,4 @@
-# JSON::Repair [![Build Status](https://github.com/sashazykov/json-repair-rb/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/sashazykov/json-repair-rb/actions) [![Gem Version](https://badge.fury.io/rb/json-repair.svg)](https://badge.fury.io/rb/json-repair)
+# JSON::Repair [![Gem Version](https://badge.fury.io/rb/json-repair.svg)](https://badge.fury.io/rb/json-repair) [![Build Status](https://github.com/sashazykov/json-repair-rb/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/sashazykov/json-repair-rb/actions)
 
 This is a Ruby gem designed to repair broken JSON strings. Inspired by and based on the [jsonrepair js library](https://github.com/josdejong/jsonrepair/). It efficiently handles and corrects malformed JSON data, making it especially useful in scenarios where JSON output from LLMs might not strictly adhere to JSON standards. Whether it's missing quotes, misplaced commas, or unexpected characters, it ensures that the JSON data is valid and can be parsed correctly.
 
@@ -48,3 +48,10 @@ The gem is available as open source under the terms of the [ISC License](https:/
 ## Code of Conduct
 
 Everyone interacting in the JSON::Repair project's codebases, issue trackers, chat rooms, and mailing lists is expected to follow the [code of conduct](https://github.com/sashazykov/json-repair-rb/blob/main/CODE_OF_CONDUCT.md).
+
+## Similar libraries in other languages
+
+- Typescript: https://github.com/josdejong/jsonrepair
+- Go: https://github.com/RealAlexandreAI/json-repair
+- JavaScript: https://github.com/RyanMarcus/dirty-json
+- Python: https://github.com/mangiucugna/json_repair
