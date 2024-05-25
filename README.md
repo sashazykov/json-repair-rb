@@ -1,4 +1,4 @@
-# JSON::Repair
+# JSON::Repair [![Build Status](https://github.com/sashazykov/json-repair-rb/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/sashazykov/json-repair-rb/actions) [![Gem Version](https://badge.fury.io/rb/json-repair.svg)](https://badge.fury.io/rb/json-repair)
 
 This is a Ruby gem designed to repair broken JSON strings. Inspired by and based on the [jsonrepair js library](https://github.com/josdejong/jsonrepair/). It efficiently handles and corrects malformed JSON data, making it especially useful in scenarios where JSON output from LLMs might not strictly adhere to JSON standards. Whether it's missing quotes, misplaced commas, or unexpected characters, it ensures that the JSON data is valid and can be parsed correctly.
 
