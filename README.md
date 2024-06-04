@@ -25,7 +25,7 @@ require 'json/repair'
 
 # Example of repairing a JSON string
 broken_json = '{name: Alice, "age": 25,}'
-repaired_json = JSON::Repair.repair(broken_json)
+repaired_json = JSON.repair(broken_json)
 puts repaired_json  # Outputs: {"name": "Alice", "age": 25}
 ```
 
