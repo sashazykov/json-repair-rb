@@ -31,6 +31,18 @@ puts repaired_json  # Outputs: {"name": "Alice", "age": 25}
 
 The `repair` method takes a string containing JSON data and returns a corrected version of this string, ensuring it is valid JSON.
 
+## Command Line Interface
+
+You can also use JSON::Repair from the command line. This allows you to repair broken JSON data directly from standard input.
+
+### Example
+
+```bash
+$ cat broken.json | json-repair
+```
+
+This will read the contents of `broken.json`, repair the JSON data, and print the repaired JSON to the standard output.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
