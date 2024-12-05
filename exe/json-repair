@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'json/repair'
 
-input = STDIN.read
+input = $stdin.read
 repaired_json = JSON.repair(input)
 puts repaired_json
