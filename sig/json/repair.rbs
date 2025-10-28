@@ -3,5 +3,5 @@ module JSON
     VERSION: String
   end
 
-  def self.repair(String) -> ?String
+  def self.repair: (String) -> String?
 end
