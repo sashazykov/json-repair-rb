@@ -31,6 +31,21 @@ puts repaired_json  # Outputs: {"name": "Alice", "age": 25}
 
 The `repair` method takes a string containing JSON data and returns a corrected version of this string, ensuring it is valid JSON.
 
+## Command line
+
+The gem ships a `json-repair` executable. It reads from stdin or a file and writes to stdout, `--output FILE`, or back over the input file with `--overwrite`.
+
+```bash
+$ echo '{a:1,}' | json-repair
+{"a":1}
+
+$ json-repair broken.json
+$ json-repair broken.json -o fixed.json
+$ json-repair broken.json --overwrite
+```
+
+Run `json-repair --help` for the full list of options.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

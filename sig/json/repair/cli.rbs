@@ -1,0 +1,11 @@
+module JSON
+  module Repair
+    class CLI
+      def self.call: (Array[String] argv, ?stdin: IO, ?stdout: IO, ?stderr: IO) -> Integer
+
+      def initialize: (?stdin: IO, ?stdout: IO, ?stderr: IO) -> void
+
+      def call: (Array[String] argv) -> Integer
+    end
+  end
+end
