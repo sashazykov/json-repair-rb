@@ -26,6 +26,19 @@ RSpec.describe JSON::Repair::CLI do
       expect(out).to eq('')
       expect(err).to match(/json-repair:.*at index/)
     end
+
+    it 'returns non-zero on empty input' do
+      status, out, err = run([], stdin: '')
+      expect(status).to eq(1)
+      expect(out).to eq('')
+      expect(err).to include('json-repair:')
+    end
+
+    it 'does not append a second newline when the repaired output already ends with one' do
+      status, out, _err = run([], stdin: "[1, 2, 3]\n")
+      expect(status).to eq(0)
+      expect(out).to eq("[1, 2, 3]\n")
+    end
   end
 
   describe 'file input' do
@@ -80,6 +93,37 @@ RSpec.describe JSON::Repair::CLI do
       end
     end
 
+    it 'preserves the original file mode' do
+      Tempfile.create(['broken', '.json']) do |f|
+        f.write('{a:1,}')
+        f.close
+        File.chmod(0o644, f.path)
+        run([f.path, '--overwrite'])
+        expect(File.stat(f.path).mode & 0o777).to eq(0o644)
+      end
+    end
+
+    it 'leaves no temp files behind on a successful overwrite' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'broken.json')
+        File.write(path, '{a:1,}')
+        run([path, '--overwrite'])
+        expect(Dir.children(dir)).to contain_exactly('broken.json')
+      end
+    end
+
+    it 'cleans up the temp file when the repaired write fails to land' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'broken.json')
+        File.write(path, '{a:1,}')
+        allow(FileUtils).to receive(:mv).and_raise(Errno::EXDEV)
+        status, _out, err = run([path, '--overwrite'])
+        expect(status).to eq(1)
+        expect(err).to include('json-repair:')
+        expect(Dir.children(dir)).to contain_exactly('broken.json')
+      end
+    end
+
     it 'errors out without a filename' do
       status, _out, err = run(['--overwrite'])
       expect(status).to eq(1)
@@ -120,6 +164,20 @@ RSpec.describe JSON::Repair::CLI do
       status, _out, err = run(['--bogus'])
       expect(status).to eq(1)
       expect(err).to include('invalid option')
+    end
+
+    it 'rejects --output with no argument' do
+      status, _out, err = run(['-o'])
+      expect(status).to eq(1)
+      expect(err).to include('missing argument')
+    end
+  end
+
+  describe 'argument validation' do
+    it 'rejects more than one positional argument' do
+      status, _out, err = run(['a.json', 'b.json'])
+      expect(status).to eq(1)
+      expect(err).to include('unexpected argument: b.json')
     end
   end
 end

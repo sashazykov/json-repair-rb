@@ -73,11 +73,14 @@ module JSON
       # over the original. Tempfile.create uses O_EXCL + a random suffix, so
       # the temp path is safe against symlink / clobber races; FileUtils.mv
       # with force: true handles cross-device renames and Windows, where
-      # File.rename cannot overwrite an existing destination.
+      # File.rename cannot overwrite an existing destination. The original
+      # file's mode is preserved (Tempfile defaults to 0600).
       def replace_in_place(input_path, repaired)
+        original_mode = File.stat(input_path).mode
         Tempfile.create(['json-repair', '.tmp'], File.dirname(input_path)) do |tmp|
           tmp.write(repaired)
           tmp.close
+          File.chmod(original_mode, tmp.path)
           FileUtils.mv(tmp.path, input_path, force: true)
         end
       end
