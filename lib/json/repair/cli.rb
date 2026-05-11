@@ -95,17 +95,19 @@ module JSON
         end
       end
 
+      OVERWRITE_DESC = 'Replace the input file in place (requires filename; conflicts with --output)'
+      private_constant :OVERWRITE_DESC
+
       def define_options(opts)
         opts.on('-o', '--output FILE', 'Write repaired JSON to FILE') { |f| @output_path = f }
-        opts.on('--overwrite', 'Replace the input file in place (requires filename)') { @overwrite = true }
-        opts.on('-v', '--version', 'Print version and exit') do
-          @stdout.puts JSON::Repair::VERSION
-          @halt = 0
-        end
-        opts.on('-h', '--help', 'Print this help and exit') do
-          @stdout.puts opts.help
-          @halt = 0
-        end
+        opts.on('--overwrite', OVERWRITE_DESC) { @overwrite = true }
+        opts.on('-v', '--version', 'Print version and exit') { halt_with(JSON::Repair::VERSION) }
+        opts.on('-h', '--help', 'Print this help and exit') { halt_with(opts.help) }
+      end
+
+      def halt_with(message)
+        @stdout.puts message
+        @halt = 0
       end
     end
   end

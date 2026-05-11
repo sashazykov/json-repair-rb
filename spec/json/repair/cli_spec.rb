@@ -157,6 +157,11 @@ RSpec.describe JSON::Repair::CLI do
       expect(out).to include('--output')
       expect(out).to include('--overwrite')
     end
+
+    it 'documents that --overwrite conflicts with --output' do
+      _, out, = run(['--help'])
+      expect(out).to match(/--overwrite[^\n]*conflicts with --output/)
+    end
   end
 
   describe 'unknown options' do
