@@ -61,6 +61,12 @@ RSpec.describe JSON::Repair::CLI do
         end
       end
     end
+
+    it 'exits non-zero with a message when the output path is not writable' do
+      status, _out, err = run(['-o', '/nonexistent-dir/out.json'], stdin: '{a:1}')
+      expect(status).to eq(1)
+      expect(err).to include('json-repair:')
+    end
   end
 
   describe '--overwrite' do

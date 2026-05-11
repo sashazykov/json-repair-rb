@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
+require 'fileutils'
 require 'optparse'
+require 'tempfile'
 require_relative '../repair'
 
 module JSON
@@ -29,7 +31,7 @@ module JSON
         repaired = JSON.repair(read_input(input_path))
         write_output(repaired, input_path)
         0
-      rescue OptionParser::ParseError, JSON::JSONRepairError, Errno::ENOENT => e
+      rescue OptionParser::ParseError, JSON::JSONRepairError, SystemCallError, IOError => e
         @stderr.puts "json-repair: #{e.message}"
         1
       end
@@ -58,14 +60,25 @@ module JSON
 
       def write_output(repaired, input_path)
         if @overwrite
-          tmp = "#{input_path}.repair-#{Time.now.utc.strftime('%Y%m%dT%H%M%S%N')}.tmp"
-          File.write(tmp, repaired)
-          File.rename(tmp, input_path)
+          replace_in_place(input_path, repaired)
         elsif @output_path
           File.write(@output_path, repaired)
         else
           @stdout.write(repaired)
           @stdout.write("\n") unless repaired.end_with?("\n")
+        end
+      end
+
+      # Write to a uniquely-named tempfile alongside the input, then move it
+      # over the original. Tempfile.create uses O_EXCL + a random suffix, so
+      # the temp path is safe against symlink / clobber races; FileUtils.mv
+      # with force: true handles cross-device renames and Windows, where
+      # File.rename cannot overwrite an existing destination.
+      def replace_in_place(input_path, repaired)
+        Tempfile.create(['json-repair', '.tmp'], File.dirname(input_path)) do |tmp|
+          tmp.write(repaired)
+          tmp.close
+          FileUtils.mv(tmp.path, input_path, force: true)
         end
       end
 
