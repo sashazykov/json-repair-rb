@@ -16,12 +16,22 @@ module JSON
         @stdin = stdin
         @stdout = stdout
         @stderr = stderr
-        @output_path = nil
-        @overwrite = false
-        @halt = nil
       end
 
+      # Reset per-invocation state so a single instance can be safely reused
+      # (e.g. `cli = CLI.new; cli.call(['-v']); cli.call(['x'])`).
       def call(argv)
+        @output_path = @halt = nil
+        @overwrite = false
+        run(argv)
+      rescue OptionParser::ParseError, JSON::JSONRepairError, SystemCallError, IOError => e
+        @stderr.puts "json-repair: #{e.message}"
+        1
+      end
+
+      private
+
+      def run(argv)
         positional = parser.parse(argv)
         return @halt if @halt
 
@@ -31,12 +41,7 @@ module JSON
         repaired = JSON.repair(read_input(input_path))
         write_output(repaired, input_path)
         0
-      rescue OptionParser::ParseError, JSON::JSONRepairError, SystemCallError, IOError => e
-        @stderr.puts "json-repair: #{e.message}"
-        1
       end
-
-      private
 
       def validate(positional, input_path)
         error = validation_error(positional, input_path)

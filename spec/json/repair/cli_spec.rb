@@ -185,4 +185,40 @@ RSpec.describe JSON::Repair::CLI do
       expect(err).to include('unexpected argument: b.json')
     end
   end
+
+  describe 'instance reuse' do
+    it 'resets option state between calls so prior --version/--help does not short-circuit' do
+      stdout = StringIO.new
+      stderr = StringIO.new
+      cli = described_class.new(stdin: StringIO.new('{a:1,}'), stdout: stdout, stderr: stderr)
+
+      first = cli.call(['--version'])
+      expect(first).to eq(0)
+      expect(stdout.string).to include(JSON::Repair::VERSION)
+
+      stdout.truncate(0)
+      stdout.rewind
+      second = cli.call([])
+      expect(second).to eq(0)
+      expect(stdout.string).to eq("{\"a\":1}\n")
+    end
+
+    it 'does not carry --overwrite forward between calls on the same instance' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'broken.json')
+        File.write(path, '{a:1,}')
+        stderr = StringIO.new
+        cli = described_class.new(stdin: StringIO.new('{b:2}'), stdout: StringIO.new, stderr: stderr)
+
+        first = cli.call([path, '--overwrite'])
+        expect(first).to eq(0)
+
+        # Without reset, @overwrite would still be true on this second call and
+        # the bare stdin invocation would fail with "--overwrite requires a filename".
+        second = cli.call([])
+        expect(second).to eq(0)
+        expect(stderr.string).to eq('')
+      end
+    end
+  end
 end

@@ -1,9 +1,14 @@
 module JSON
   module Repair
     class CLI
-      def self.call: (Array[String] argv, ?stdin: IO, ?stdout: IO, ?stderr: IO) -> Integer
+      # `IO | StringIO` because `StringIO` is not an `IO` subclass; the specs
+      # inject `StringIO` instances and any other duck-typed stream that
+      # implements `#read` / `#write` / `#puts` would work too.
+      type stream = IO | StringIO
 
-      def initialize: (?stdin: IO, ?stdout: IO, ?stderr: IO) -> void
+      def self.call: (Array[String] argv, ?stdin: stream, ?stdout: stream, ?stderr: stream) -> Integer
+
+      def initialize: (?stdin: stream, ?stdout: stream, ?stderr: stream) -> void
 
       def call: (Array[String] argv) -> Integer
     end
