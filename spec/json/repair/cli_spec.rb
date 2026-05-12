@@ -75,10 +75,14 @@ RSpec.describe JSON::Repair::CLI do
       end
     end
 
-    it 'exits non-zero with a message when the output path is not writable' do
-      status, _out, err = run(['-o', '/nonexistent-dir/out.json'], stdin: '{a:1}')
-      expect(status).to eq(1)
-      expect(err).to include('json-repair:')
+    it 'exits non-zero with a message when writing the output file fails' do
+      Tempfile.create(['fixed', '.json']) do |output|
+        output.close
+        allow(File).to receive(:write).with(output.path, anything).and_raise(Errno::EACCES)
+        status, _out, err = run(['-o', output.path], stdin: '{a:1}')
+        expect(status).to eq(1)
+        expect(err).to include('json-repair:')
+      end
     end
   end
 
