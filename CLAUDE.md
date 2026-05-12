@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `bin/setup` — install dependencies via Bundler.
-- `bundle exec rake` — default task; runs RSpec, RuboCop, and Steep.
+- `bundle exec rake` — default task; runs RSpec, RuboCop, RBS validate, and Steep.
 - `bundle exec rspec` — run the test suite.
 - `bundle exec rspec spec/json_spec.rb:42` — run a single example by line number; nearly all behavioral specs live in `spec/json_spec.rb`.
 - `bundle exec rubocop` — lint. Project-specific exclusions in `.rubocop.yml` deliberately disable several `Metrics/*` cops for `lib/json/repairer.rb` and `lib/json/repair/string_utils.rb` because the parser is long by design — don't try to "fix" it by chopping methods up.
