@@ -1,4 +1,4 @@
-name: Rspec, Rubocop & Steep
+name: Rspec, Rubocop, RBS & Steep
 
 on:
   push:

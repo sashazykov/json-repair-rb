@@ -1,9 +1,8 @@
 module JSON
   module Repair
     class CLI
-      # `::IO | ::StringIO` because `::StringIO` is not an `::IO` subclass; the
-      # specs inject `::StringIO` instances and any other duck-typed stream
-      # that implements `#read` / `#write` / `#puts` would work too.
+      # `::IO | ::StringIO` because `::StringIO` is not an `::IO` subclass
+      # and the specs inject `::StringIO` instances.
       type stream = ::IO | ::StringIO
 
       OVERWRITE_DESC: ::String
