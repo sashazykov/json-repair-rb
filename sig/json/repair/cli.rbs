@@ -1,16 +1,16 @@
 module JSON
   module Repair
     class CLI
-      # `IO | StringIO` because `StringIO` is not an `IO` subclass; the specs
-      # inject `StringIO` instances and any other duck-typed stream that
-      # implements `#read` / `#write` / `#puts` would work too.
-      type stream = IO | StringIO
+      # `::IO | ::StringIO` because `::StringIO` is not an `::IO` subclass; the
+      # specs inject `::StringIO` instances and any other duck-typed stream
+      # that implements `#read` / `#write` / `#puts` would work too.
+      type stream = ::IO | ::StringIO
 
-      def self.call: (Array[String] argv, ?stdin: stream, ?stdout: stream, ?stderr: stream) -> Integer
+      def self.call: (::Array[::String] argv, ?stdin: stream, ?stdout: stream, ?stderr: stream) -> ::Integer
 
       def initialize: (?stdin: stream, ?stdout: stream, ?stderr: stream) -> void
 
-      def call: (Array[String] argv) -> Integer
+      def call: (::Array[::String] argv) -> ::Integer
     end
   end
 end
