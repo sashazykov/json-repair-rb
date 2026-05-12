@@ -57,6 +57,8 @@ Run `json-repair --help` for the full list of options.
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
+Run `bundle exec rake bench` for a `benchmark-ips` regression baseline across four canned scenarios (valid mixed JSON, broken LLM-style output, a large array, deeply nested objects). The harness lives under `benchmark/` and is not shipped in the published gem.
+
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing

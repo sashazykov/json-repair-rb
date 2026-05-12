@@ -19,6 +19,7 @@ Metrics/AbcSize:
 Metrics/MethodLength:
   Exclude:
     - lib/json/repairer.rb
+    - benchmark/**/*
 
 Metrics/CyclomaticComplexity:
   Exclude:
