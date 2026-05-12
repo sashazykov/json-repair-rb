@@ -739,28 +739,28 @@ module JSON
     end
 
     def throw_invalid_character(char)
-      raise JSONRepairError, "Invalid character #{char.inspect} at index #{@index}"
+      raise JSONRepairError.new("Invalid character #{char.inspect}", @index)
     end
 
     def throw_unexpected_character
-      raise JSONRepairError, "Unexpected character #{@json[@index].inspect} at index #{@index}"
+      raise JSONRepairError.new("Unexpected character #{@json[@index].inspect}", @index)
     end
 
     def throw_unexpected_end
-      raise JSONRepairError, 'Unexpected end of json string'
+      raise JSONRepairError.new('Unexpected end of json string', @index)
     end
 
     def throw_object_key_expected
-      raise JSONRepairError, 'Object key expected'
+      raise JSONRepairError.new('Object key expected', @index)
     end
 
     def throw_colon_expected
-      raise JSONRepairError, 'Colon expected'
+      raise JSONRepairError.new('Colon expected', @index)
     end
 
     def throw_invalid_unicode_character
       chars = @json[@index, 6]
-      raise JSONRepairError, "Invalid unicode character #{chars.inspect} at index #{@index}"
+      raise JSONRepairError.new("Invalid unicode character #{chars.inspect}", @index)
     end
   end
 end

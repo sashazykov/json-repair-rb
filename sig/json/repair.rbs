@@ -1,5 +1,8 @@
 module JSON
   class JSONRepairError < StandardError
+    attr_reader position: ::Integer?
+
+    def initialize: (::String message, ?::Integer? position) -> void
   end
 
   module Repair

@@ -684,17 +684,17 @@ RSpec.describe JSON do
     context 'when the JSON cannot be repaired' do
       specify do
         expect { JSON.repair('') }.to \
-          raise_error(JSON::JSONRepairError, 'Unexpected end of json string')
+          raise_error(JSON::JSONRepairError, 'Unexpected end of json string at index 0')
       end
 
       specify do
         expect { JSON.repair('{"a",') }.to \
-          raise_error(JSON::JSONRepairError, 'Colon expected')
+          raise_error(JSON::JSONRepairError, 'Colon expected at index 4')
       end
 
       specify do
         expect { JSON.repair('{:2}') }.to \
-          raise_error(JSON::JSONRepairError, 'Object key expected')
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 1')
       end
 
       specify do
@@ -704,7 +704,7 @@ RSpec.describe JSON do
 
       specify do
         expect { JSON.repair('{"a" ]') }.to \
-          raise_error(JSON::JSONRepairError, 'Colon expected')
+          raise_error(JSON::JSONRepairError, 'Colon expected at index 5')
       end
 
       specify do
@@ -735,6 +735,42 @@ RSpec.describe JSON do
       specify do
         expect { JSON.repair("\"abc\u001F\"") }.to \
           raise_error(JSON::JSONRepairError, /\AInvalid character "\\u001f" at index 4\z/i)
+      end
+
+      describe '#position on the raised error' do
+        def position_for(json)
+          JSON.repair(json)
+        rescue JSON::JSONRepairError => e
+          e.position
+        end
+
+        it 'reports the index for unexpected-end (throw_unexpected_end)' do
+          expect(position_for('')).to eq(0)
+        end
+
+        it 'reports the index for unexpected-character (throw_unexpected_character)' do
+          expect(position_for('{"a":2}{}')).to eq(7)
+        end
+
+        it 'reports the index for object-key-expected (throw_object_key_expected)' do
+          expect(position_for('{:2}')).to eq(1)
+        end
+
+        it 'reports the index for colon-expected (throw_colon_expected)' do
+          expect(position_for('{"a" ]')).to eq(5)
+        end
+
+        it 'reports the index for invalid-unicode-character (throw_invalid_unicode_character)' do
+          expect(position_for('"\u26"')).to eq(1)
+        end
+
+        it 'reports the index for invalid-character (throw_invalid_character)' do
+          expect(position_for("\"abc\u001F\"")).to eq(4)
+        end
+
+        it 'is nil when JSONRepairError is constructed without a position' do
+          expect(JSON::JSONRepairError.new('boom').position).to be_nil
+        end
       end
     end
   end
