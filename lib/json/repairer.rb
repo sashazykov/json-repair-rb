@@ -735,17 +735,10 @@ module JSON
         processed_value = parse_value
       end
 
-      # The `unless processed_value` wrapper is preserved for parity with the
-      # upstream JS parse_newline_delimited_json. The body always runs because
-      # the `while processed_value` loop above only exits when processed_value
-      # is falsy; the :nocov: suppresses the implicit-else branch from branch
-      # coverage, not unreachable body code.
-      # :nocov:
-      unless processed_value
-        # repair: remove trailing comma
-        @output = strip_last_occurrence(@output, ',')
-      end
-      # :nocov:
+      # repair: remove trailing comma
+      # (the `while processed_value` loop above only exits when processed_value
+      # is falsy, so the upstream JS `if (!processedValue)` guard is redundant)
+      @output = strip_last_occurrence(@output, ',')
 
       # repair: wrap the output inside array brackets
       @output = "[\n#{@output}\n]"
