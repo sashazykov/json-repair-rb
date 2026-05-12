@@ -26,7 +26,7 @@ require 'json/repair'
 # Example of repairing a JSON string
 broken_json = '{name: Alice, "age": 25,}'
 repaired_json = JSON.repair(broken_json)
-puts repaired_json  # Outputs: {"name": "Alice", "age": 25}
+puts repaired_json  # Outputs: {"name":"Alice","age":25}
 ```
 
 The `repair` method takes a string containing JSON data and returns a corrected version of this string, ensuring it is valid JSON.
@@ -37,6 +37,21 @@ Pass `return_objects: true` to get the parsed Ruby value (Hash, Array, or scalar
 JSON.repair('{a: 1, b: [2, 3,]}', return_objects: true)
 # => {"a" => 1, "b" => [2, 3]}
 ```
+
+### Canonical output
+
+`JSON.repair` returns canonical JSON via `JSON.generate`. When the input is already valid, stdlib `JSON.parse` handles it; otherwise the repairer fixes it up and the result is re-serialized the same way. Either way, the output is the canonical form of the parsed value — whitespace is collapsed, numbers are normalized, `\uXXXX` escapes are decoded to literal characters, and objects with duplicate keys collapse to last-write-wins.
+
+```ruby
+JSON.repair('{"a": 1}')          # => '{"a":1}'
+JSON.repair('{a:1}')             # => '{"a":1}'
+JSON.repair('2300e3')            # => '2300000.0'
+JSON.repair('{"a":1,"a":2}')     # => '{"a":2}'
+```
+
+If you need the parsed Ruby value instead of a string, pass `return_objects: true` (covered above).
+
+`skip_json_loads: true` skips the stdlib `JSON.parse` attempt and routes the input straight through the repairer. The output is the same; the option is purely a performance knob for callers who know their input will need repair.
 
 ## Command line
 

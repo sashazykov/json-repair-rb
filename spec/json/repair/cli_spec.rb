@@ -34,10 +34,10 @@ RSpec.describe JSON::Repair::CLI do
       expect(err).to include('json-repair:')
     end
 
-    it 'does not append a second newline when the repaired output already ends with one' do
+    it 'appends a trailing newline to canonical stdout output' do
       status, out, _err = run([], stdin: "[1, 2, 3]\n")
       expect(status).to eq(0)
-      expect(out).to eq("[1, 2, 3]\n")
+      expect(out).to eq("[1,2,3]\n")
     end
   end
 

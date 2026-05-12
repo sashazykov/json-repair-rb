@@ -4,51 +4,51 @@ RSpec.describe JSON do
   describe '.repair' do
     it 'parses a valid JSON' do
       expect(JSON.repair('{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}')).to \
-        eq('{"a":2.3e100,"b":"str","c":null,"d":false,"e":[1,2,3]}')
+        eq('{"a":2.3e+100,"b":"str","c":null,"d":false,"e":[1,2,3]}')
     end
 
-    it 'parses whitespace' do
-      expect(JSON.repair("  { \n } \t ")).to eq("  { \n } \t ")
+    it 'collapses surrounding whitespace on the fast path' do
+      expect(JSON.repair("  { \n } \t ")).to eq('{}')
     end
 
     it 'parses object' do
       expect(JSON.repair('{}')).to eq('{}')
-      expect(JSON.repair('{  }')).to eq('{  }')
-      expect(JSON.repair('{"a": {}}')).to eq('{"a": {}}')
-      expect(JSON.repair('{"a": "b"}')).to eq('{"a": "b"}')
-      expect(JSON.repair('{"a": 2}')).to eq('{"a": 2}')
+      expect(JSON.repair('{  }')).to eq('{}')
+      expect(JSON.repair('{"a": {}}')).to eq('{"a":{}}')
+      expect(JSON.repair('{"a": "b"}')).to eq('{"a":"b"}')
+      expect(JSON.repair('{"a": 2}')).to eq('{"a":2}')
     end
 
     it 'parses array' do
       expect(JSON.repair('[]')).to eq('[]')
-      expect(JSON.repair('[  ]')).to eq('[  ]')
+      expect(JSON.repair('[  ]')).to eq('[]')
       expect(JSON.repair('[1,2,3]')).to eq('[1,2,3]')
-      expect(JSON.repair('[ 1 , 2 , 3 ]')).to eq('[ 1 , 2 , 3 ]')
+      expect(JSON.repair('[ 1 , 2 , 3 ]')).to eq('[1,2,3]')
       expect(JSON.repair('[1,2,[3,4,5]]')).to eq('[1,2,[3,4,5]]')
       expect(JSON.repair('[{}]')).to eq('[{}]')
       expect(JSON.repair('{"a":[]}')).to eq('{"a":[]}')
-      expect(JSON.repair('[1, "hi", true, false, null, {}, []]')).to eq('[1, "hi", true, false, null, {}, []]')
+      expect(JSON.repair('[1, "hi", true, false, null, {}, []]')).to eq('[1,"hi",true,false,null,{},[]]')
     end
 
     it 'parses number' do
       expect(JSON.repair('23')).to eq('23')
       expect(JSON.repair('0')).to eq('0')
-      expect(JSON.repair('0e+2')).to eq('0e+2')
+      expect(JSON.repair('0e+2')).to eq('0.0')
       expect(JSON.repair('0.0')).to eq('0.0')
-      expect(JSON.repair('-0')).to eq('-0')
+      expect(JSON.repair('-0')).to eq('0')
       expect(JSON.repair('2.3')).to eq('2.3')
-      expect(JSON.repair('2300e3')).to eq('2300e3')
-      expect(JSON.repair('2300e+3')).to eq('2300e+3')
-      expect(JSON.repair('2300e-3')).to eq('2300e-3')
+      expect(JSON.repair('2300e3')).to eq('2300000.0')
+      expect(JSON.repair('2300e+3')).to eq('2300000.0')
+      expect(JSON.repair('2300e-3')).to eq('2.3')
       expect(JSON.repair('-2')).to eq('-2')
-      expect(JSON.repair('2e-3')).to eq('2e-3')
-      expect(JSON.repair('2.3e-3')).to eq('2.3e-3')
+      expect(JSON.repair('2e-3')).to eq('0.002')
+      expect(JSON.repair('2.3e-3')).to eq('0.0023')
     end
 
     it 'parses string' do
       expect(JSON.repair('"str"')).to eq('"str"')
-      expect(JSON.repair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')).to eq('"\\"\\\\\\/\\b\\f\\n\\r\\t"')
-      expect(JSON.repair('"\\u260E"')).to eq('"\\u260E"')
+      expect(JSON.repair('"\\"\\\\\\/\\b\\f\\n\\r\\t"')).to eq('"\"\\\\/\\b\\f\\n\\r\\t"')
+      expect(JSON.repair('"\\u260E"')).to eq('"☎"')
     end
 
     it 'parses keywords' do
@@ -69,25 +69,25 @@ RSpec.describe JSON do
 
     it 'supports unicode characters in a string' do
       expect(JSON.repair('"★"')).to eq('"★"')
-      expect(JSON.repair('"\u2605"')).to eq('"\u2605"')
+      expect(JSON.repair('"\u2605"')).to eq('"★"')
       expect(JSON.repair('"😀"')).to eq('"😀"')
-      expect(JSON.repair('"\ud83d\ude00"')).to eq('"\ud83d\ude00"')
+      expect(JSON.repair('"\ud83d\ude00"')).to eq('"😀"')
       expect(JSON.repair('"йнформация"')).to eq('"йнформация"')
     end
 
     it 'supports escaped unicode characters in a string' do
-      expect(JSON.repair('"\u2605"')).to eq('"\u2605"')
-      expect(JSON.repair('"\u2605A"')).to eq('"\u2605A"')
-      expect(JSON.repair('"\ud83d\ude00"')).to eq('"\ud83d\ude00"')
+      expect(JSON.repair('"\u2605"')).to eq('"★"')
+      expect(JSON.repair('"\u2605A"')).to eq('"★A"')
+      expect(JSON.repair('"\ud83d\ude00"')).to eq('"😀"')
       expect(JSON.repair('"\u0439\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f"')).to \
-        eq('"\u0439\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f"')
+        eq('"йнформация"')
     end
 
     it 'supports unicode characters in a key' do
       expect(JSON.repair('{"★":true}')).to eq('{"★":true}')
-      expect(JSON.repair('{"\u2605":true}')).to eq('{"\u2605":true}')
+      expect(JSON.repair('{"\u2605":true}')).to eq('{"★":true}')
       expect(JSON.repair('{"😀":true}')).to eq('{"😀":true}')
-      expect(JSON.repair('{"\ud83d\ude00":true}')).to eq('{"\ud83d\ude00":true}')
+      expect(JSON.repair('{"\ud83d\ude00":true}')).to eq('{"😀":true}')
     end
 
     it 'leaves string content untouched' do
@@ -98,21 +98,21 @@ RSpec.describe JSON do
     end
 
     it 'does not add extra items to an array' do
-      expect(JSON.repair("[\n{},\n{}\n]")).to eq("[\n{},\n{}\n]")
+      expect(JSON.repair("[\n{},\n{}\n]")).to eq('[{},{}]')
     end
 
     context 'when repairing invalid JSON' do
       it 'adds missing quotes' do
         expect(JSON.repair('abc')).to eq('"abc"')
         expect(JSON.repair('hello   world')).to eq('"hello   world"')
-        expect(JSON.repair("{\nmessage: hello world\n}")).to eq("{\n\"message\": \"hello world\"\n}")
+        expect(JSON.repair("{\nmessage: hello world\n}")).to eq('{"message":"hello world"}')
         expect(JSON.repair('{a:2}')).to eq('{"a":2}')
-        expect(JSON.repair('{a: 2}')).to eq('{"a": 2}')
-        expect(JSON.repair('{2: 2}')).to eq('{"2": 2}')
-        expect(JSON.repair('{true: 2}')).to eq('{"true": 2}')
-        expect(JSON.repair("{\n  a: 2\n}")).to eq("{\n  \"a\": 2\n}")
+        expect(JSON.repair('{a: 2}')).to eq('{"a":2}')
+        expect(JSON.repair('{2: 2}')).to eq('{"2":2}')
+        expect(JSON.repair('{true: 2}')).to eq('{"true":2}')
+        expect(JSON.repair("{\n  a: 2\n}")).to eq('{"a":2}')
         expect(JSON.repair('[a,b]')).to eq('["a","b"]')
-        expect(JSON.repair("[\na,\nb\n]")).to eq("[\n\"a\",\n\"b\"\n]")
+        expect(JSON.repair("[\na,\nb\n]")).to eq('["a","b"]')
       end
 
       it 'adds missing end quote' do
@@ -124,8 +124,8 @@ RSpec.describe JSON do
         expect(JSON.repair('{"date":2024-10-18T18:35:22.229Z}')).to \
           eq('{"date":"2024-10-18T18:35:22.229Z"}')
         expect(JSON.repair('"She said:')).to eq('"She said:"')
-        expect(JSON.repair('{"text": "She said:')).to eq('{"text": "She said:"}')
-        expect(JSON.repair('["hello, world]')).to eq('["hello", "world"]')
+        expect(JSON.repair('{"text": "She said:')).to eq('{"text":"She said:"}')
+        expect(JSON.repair('["hello, world]')).to eq('["hello","world"]')
         expect(JSON.repair('["hello,"world"]')).to eq('["hello","world"]')
 
         expect(JSON.repair('{"a":"b}')).to eq('{"a":"b"}')
@@ -135,7 +135,7 @@ RSpec.describe JSON do
         expect(JSON.repair('["b,c,]')).to eq('["b","c"]')
 
         expect(JSON.repair("\u2018abc")).to eq('"abc"')
-        expect(JSON.repair('"it\'s working')).to eq('"it\'s working"')
+        expect(JSON.repair('"it\'s working')).to eq("\"it's working\"")
         expect(JSON.repair('["abc+/*comment*/"def"]')).to eq('["abcdef"]')
         expect(JSON.repair('["abc/*comment*/+"def"]')).to eq('["abcdef"]')
         expect(JSON.repair('["abc,/*comment*/"def"]')).to eq('["abc","def"]')
@@ -174,46 +174,46 @@ RSpec.describe JSON do
         expect(JSON.repair('{"foo')).to eq('{"foo":null}')
         expect(JSON.repair('{')).to eq('{}')
         expect(JSON.repair('2.')).to eq('2.0')
-        expect(JSON.repair('2e')).to eq('2e0')
-        expect(JSON.repair('2e+')).to eq('2e+0')
-        expect(JSON.repair('2e-')).to eq('2e-0')
+        expect(JSON.repair('2e')).to eq('2.0')
+        expect(JSON.repair('2e+')).to eq('2.0')
+        expect(JSON.repair('2e-')).to eq('2.0')
         expect(JSON.repair('{"foo":"bar\u20')).to eq('{"foo":"bar"}')
         expect(JSON.repair('"\\u')).to eq('""')
         expect(JSON.repair('"\\u2')).to eq('""')
         expect(JSON.repair('"\\u260')).to eq('""')
-        expect(JSON.repair('"\\u2605')).to eq('"\\u2605"')
-        expect(JSON.repair('{"s \\ud')).to eq('{"s": null}')
-        expect(JSON.repair('{"message": "it\'s working')).to eq('{"message": "it\'s working"}')
+        expect(JSON.repair('"\\u2605')).to eq('"★"')
+        expect(JSON.repair('{"s \\ud')).to eq('{"s":null}')
+        expect(JSON.repair('{"message": "it\'s working')).to eq("{\"message\":\"it's working\"}")
         expect(JSON.repair('{"text":"Hello Sergey,I hop')).to eq('{"text":"Hello Sergey,I hop"}')
         expect(JSON.repair('{"message": "with, multiple, commma\'s, you see?')).to \
-          eq('{"message": "with, multiple, commma\'s, you see?"}')
+          eq("{\"message\":\"with, multiple, commma's, you see?\"}")
       end
 
       it 'repairs ellipsis in an array' do
         expect(JSON.repair('[1,2,3,...]')).to eq('[1,2,3]')
-        expect(JSON.repair('[1, 2, 3, ... ]')).to eq('[1, 2, 3  ]')
+        expect(JSON.repair('[1, 2, 3, ... ]')).to eq('[1,2,3]')
         expect(JSON.repair('[1,2,3,/*comment1*/.../*comment2*/]')).to eq('[1,2,3]')
         expect(JSON.repair("[\n  1,\n  2,\n  3,\n  /*comment1*/  .../*comment2*/\n]")).to \
-          eq("[\n  1,\n  2,\n  3\n    \n]")
+          eq('[1,2,3]')
         expect(JSON.repair('{"array":[1,2,3,...]}')).to eq('{"array":[1,2,3]}')
         expect(JSON.repair('[1,2,3,...,9]')).to eq('[1,2,3,9]')
         expect(JSON.repair('[...,7,8,9]')).to eq('[7,8,9]')
-        expect(JSON.repair('[..., 7,8,9]')).to eq('[ 7,8,9]')
+        expect(JSON.repair('[..., 7,8,9]')).to eq('[7,8,9]')
         expect(JSON.repair('[...]')).to eq('[]')
-        expect(JSON.repair('[ ... ]')).to eq('[  ]')
+        expect(JSON.repair('[ ... ]')).to eq('[]')
       end
 
       it 'repairs ellipsis in an object' do
         expect(JSON.repair('{"a":2,"b":3,...}')).to eq('{"a":2,"b":3}')
         expect(JSON.repair('{"a":2,"b":3,/*comment1*/.../*comment2*/}')).to eq('{"a":2,"b":3}')
         expect(JSON.repair("{\n  \"a\":2,\n  \"b\":3,\n  /*comment1*/.../*comment2*/\n}")).to \
-          eq("{\n  \"a\":2,\n  \"b\":3\n  \n}")
-        expect(JSON.repair('{"a":2,"b":3, ... }')).to eq('{"a":2,"b":3  }')
-        expect(JSON.repair('{"nested":{"a":2,"b":3, ... }}')).to eq('{"nested":{"a":2,"b":3  }}')
+          eq('{"a":2,"b":3}')
+        expect(JSON.repair('{"a":2,"b":3, ... }')).to eq('{"a":2,"b":3}')
+        expect(JSON.repair('{"nested":{"a":2,"b":3, ... }}')).to eq('{"nested":{"a":2,"b":3}}')
         expect(JSON.repair('{"a":2,"b":3,...,"z":26}')).to eq('{"a":2,"b":3,"z":26}')
         expect(JSON.repair('{"a":2,"b":3,...}')).to eq('{"a":2,"b":3}')
         expect(JSON.repair('{...}')).to eq('{}')
-        expect(JSON.repair('{ ... }')).to eq('{  }')
+        expect(JSON.repair('{ ... }')).to eq('{}')
       end
 
       it 'adds missing start quote' do
@@ -227,11 +227,11 @@ RSpec.describe JSON do
       end
 
       it 'stops at the first next return when missing an end quote' do
-        expect(JSON.repair("[\n\"abc,\n\"def\"\n]")).to eq("[\n\"abc\",\n\"def\"\n]")
-        expect(JSON.repair("[\n\"abc,  \n\"def\"\n]")).to eq("[\n\"abc\",  \n\"def\"\n]")
-        expect(JSON.repair("[\"abc]\n")).to eq("[\"abc\"]\n")
-        expect(JSON.repair("[\"abc  ]\n")).to eq("[\"abc\"  ]\n")
-        expect(JSON.repair("[\n[\n\"abc\n]\n]\n")).to eq("[\n[\n\"abc\"\n]\n]\n")
+        expect(JSON.repair("[\n\"abc,\n\"def\"\n]")).to eq('["abc","def"]')
+        expect(JSON.repair("[\n\"abc,  \n\"def\"\n]")).to eq('["abc","def"]')
+        expect(JSON.repair("[\"abc]\n")).to eq('["abc"]')
+        expect(JSON.repair("[\"abc  ]\n")).to eq('["abc"]')
+        expect(JSON.repair("[\n[\n\"abc\n]\n]\n")).to eq('[["abc"]]')
       end
 
       it 'replaces single quotes with double quotes' do
@@ -252,19 +252,19 @@ RSpec.describe JSON do
         expect(JSON.repair("'Rounded “ quote'")).to eq('"Rounded “ quote"')
         expect(JSON.repair('"Rounded ’ quote"')).to eq('"Rounded ’ quote"')
         expect(JSON.repair("'Rounded ’ quote'")).to eq('"Rounded ’ quote"')
-        expect(JSON.repair("'Double \" quote'")).to eq('"Double \\" quote"')
+        expect(JSON.repair("'Double \" quote'")).to eq('"Double \" quote"')
       end
 
       it 'does not crash when repairing quotes' do
-        expect(JSON.repair("{pattern: '’'}")).to eq('{"pattern": "’"}')
+        expect(JSON.repair("{pattern: '’'}")).to eq('{"pattern":"’"}')
       end
 
       it 'adds/remove escape characters' do
-        expect(JSON.repair('"foo\'bar"')).to eq('"foo\'bar"')
-        expect(JSON.repair('"foo\\"bar"')).to eq('"foo\\"bar"')
-        expect(JSON.repair("'foo\"bar'")).to eq('"foo\\"bar"')
-        expect(JSON.repair("'foo\\'bar'")).to eq('"foo\'bar"')
-        expect(JSON.repair('"foo\\\'bar"')).to eq('"foo\'bar"')
+        expect(JSON.repair('"foo\'bar"')).to eq("\"foo'bar\"")
+        expect(JSON.repair('"foo\\"bar"')).to eq('"foo\"bar"')
+        expect(JSON.repair("'foo\"bar'")).to eq('"foo\"bar"')
+        expect(JSON.repair("'foo\\'bar'")).to eq("\"foo'bar\"")
+        expect(JSON.repair('"foo\\\'bar"')).to eq("\"foo'bar\"")
         expect(JSON.repair('"\\a"')).to eq('"a"')
       end
 
@@ -285,37 +285,37 @@ RSpec.describe JSON do
       end
 
       it 'escapes unescaped control characters' do
-        expect(JSON.repair("\"hello\bworld\"")).to eq('"hello\bworld"')
-        expect(JSON.repair("\"hello\fworld\"")).to eq('"hello\fworld"')
-        expect(JSON.repair("\"hello\nworld\"")).to eq('"hello\nworld"')
-        expect(JSON.repair("\"hello\rworld\"")).to eq('"hello\rworld"')
-        expect(JSON.repair("\"hello\tworld\"")).to eq('"hello\tworld"')
-        expect(JSON.repair("{\"key\nafter\": \"foo\"}")).to eq('{"key\nafter": "foo"}')
+        expect(JSON.repair("\"hello\bworld\"")).to eq('"hello\\bworld"')
+        expect(JSON.repair("\"hello\fworld\"")).to eq('"hello\\fworld"')
+        expect(JSON.repair("\"hello\nworld\"")).to eq('"hello\\nworld"')
+        expect(JSON.repair("\"hello\rworld\"")).to eq('"hello\\rworld"')
+        expect(JSON.repair("\"hello\tworld\"")).to eq('"hello\\tworld"')
+        expect(JSON.repair("{\"key\nafter\": \"foo\"}")).to eq('{"key\\nafter":"foo"}')
 
-        expect(JSON.repair("[\"hello\nworld\"]")).to eq('["hello\nworld"]')
-        expect(JSON.repair("[\"hello\nworld\"  ]")).to eq('["hello\nworld"  ]')
-        expect(JSON.repair("[\"hello\nworld\"\n]")).to eq("[\"hello\\nworld\"\n]")
+        expect(JSON.repair("[\"hello\nworld\"]")).to eq('["hello\\nworld"]')
+        expect(JSON.repair("[\"hello\nworld\"  ]")).to eq('["hello\\nworld"]')
+        expect(JSON.repair("[\"hello\nworld\"\n]")).to eq('["hello\\nworld"]')
       end
 
       it 'escapes unescaped double quotes' do
-        expect(JSON.repair('"The TV has a 24" screen"')).to eq('"The TV has a 24\\" screen"')
-        expect(JSON.repair('{"key": "apple "bee" carrot"}')).to eq('{"key": "apple \\"bee\\" carrot"}')
+        expect(JSON.repair('"The TV has a 24" screen"')).to eq('"The TV has a 24\" screen"')
+        expect(JSON.repair('{"key": "apple "bee" carrot"}')).to eq('{"key":"apple \"bee\" carrot"}')
 
-        expect(JSON.repair('["a" 2]')).to eq('["a", 2]')
-        expect(JSON.repair('["a" 2')).to eq('["a", 2]')
-        expect(JSON.repair('["," 2')).to eq('[",", 2]')
+        expect(JSON.repair('["a" 2]')).to eq('["a",2]')
+        expect(JSON.repair('["a" 2')).to eq('["a",2]')
+        expect(JSON.repair('["," 2')).to eq('[",",2]')
       end
 
       it 'replaces special white space characters' do
-        expect(JSON.repair("{\"a\":\u00a0\"foo\u00a0bar\"}")).to eq("{\"a\": \"foo\u00a0bar\"}")
-        expect(JSON.repair("{\"a\":\u202F\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u205F\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u3000\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u180e\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u2000\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u2002\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\u200b\"foo\"}")).to eq('{"a": "foo"}')
-        expect(JSON.repair("{\"a\":\ufeff\"foo\"}")).to eq('{"a": "foo"}')
+        expect(JSON.repair("{\"a\":\u00a0\"foo\u00a0bar\"}")).to eq('{"a":"foo bar"}')
+        expect(JSON.repair("{\"a\":\u202F\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u205F\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u3000\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u180e\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u2000\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u2002\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\u200b\"foo\"}")).to eq('{"a":"foo"}')
+        expect(JSON.repair("{\"a\":\ufeff\"foo\"}")).to eq('{"a":"foo"}')
       end
 
       it 'replaces non normalized left/right quotes' do
@@ -329,18 +329,18 @@ RSpec.describe JSON do
       end
 
       it 'removes block comments' do
-        expect(JSON.repair('/* foo */ {}')).to eq(' {}')
-        expect(JSON.repair('{} /* foo */ ')).to eq('{}  ')
-        expect(JSON.repair('{} /* foo ')).to eq('{} ')
-        expect(JSON.repair("\n/* foo */\n{}")).to eq("\n\n{}")
+        expect(JSON.repair('/* foo */ {}')).to eq('{}')
+        expect(JSON.repair('{} /* foo */ ')).to eq('{}')
+        expect(JSON.repair('{} /* foo ')).to eq('{}')
+        expect(JSON.repair("\n/* foo */\n{}")).to eq('{}')
         expect(JSON.repair('{"a":"foo",/*hello*/"b":"bar"}')).to eq('{"a":"foo","b":"bar"}')
         expect(JSON.repair('{"flag":/*boolean*/true}')).to eq('{"flag":true}')
       end
 
       it 'removes line comments' do
-        expect(JSON.repair('{} // comment')).to eq('{} ')
+        expect(JSON.repair('{} // comment')).to eq('{}')
         expect(JSON.repair("{\n\"a\":\"foo\",//hello\n\"b\":\"bar\"\n}")).to \
-          eq("{\n\"a\":\"foo\",\n\"b\":\"bar\"\n}")
+          eq('{"a":"foo","b":"bar"}')
       end
 
       it 'does not remove comments inside a string' do
@@ -364,39 +364,39 @@ RSpec.describe JSON do
         expect(JSON.repair('callback_123(true);')).to eq('true')
         expect(JSON.repair('callback_123(false);')).to eq('false')
         expect(JSON.repair('callback({}')).to eq('{}')
-        expect(JSON.repair('/* foo bar */ callback_123 (  {}  )')).to eq('   {}  ')
-        expect(JSON.repair('  /* foo bar */   callback_123({});  ')).to eq('     {}  ')
-        expect(JSON.repair("\n/* foo\nbar */\ncallback_123 ({});\n\n")).to eq("\n\n{}\n\n")
+        expect(JSON.repair('/* foo bar */ callback_123 (  {}  )')).to eq('{}')
+        expect(JSON.repair('  /* foo bar */   callback_123({});  ')).to eq('{}')
+        expect(JSON.repair("\n/* foo\nbar */\ncallback_123 ({});\n\n")).to eq('{}')
 
         expect { JSON.repair('callback {}') }.to \
           raise_error(JSON::JSONRepairError, 'Unexpected character "{" at index 9')
       end
 
       it 'strips markdown fenced code blocks' do
-        expect(JSON.repair("```\n{\"a\":\"b\"}\n```")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("```json\n{\"a\":\"b\"}\n```")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("```\n{\"a\":\"b\"}\n")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("\n{\"a\":\"b\"}\n```")).to eq("\n{\"a\":\"b\"}\n")
+        expect(JSON.repair("```\n{\"a\":\"b\"}\n```")).to eq('{"a":"b"}')
+        expect(JSON.repair("```json\n{\"a\":\"b\"}\n```")).to eq('{"a":"b"}')
+        expect(JSON.repair("```\n{\"a\":\"b\"}\n")).to eq('{"a":"b"}')
+        expect(JSON.repair("\n{\"a\":\"b\"}\n```")).to eq('{"a":"b"}')
         expect(JSON.repair('```{"a":"b"}```')).to eq('{"a":"b"}')
-        expect(JSON.repair("```\n[1,2,3]\n```")).to eq("\n[1,2,3]\n")
-        expect(JSON.repair("```python\n{\"a\":\"b\"}\n```")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("\n ```json\n{\"a\":\"b\"}\n```\n  ")).to eq("\n \n{\"a\":\"b\"}\n\n  ")
+        expect(JSON.repair("```\n[1,2,3]\n```")).to eq('[1,2,3]')
+        expect(JSON.repair("```python\n{\"a\":\"b\"}\n```")).to eq('{"a":"b"}')
+        expect(JSON.repair("\n ```json\n{\"a\":\"b\"}\n```\n  ")).to eq('{"a":"b"}')
       end
 
       it 'strips invalid markdown fenced code blocks' do
-        expect(JSON.repair("[```\n{\"a\":\"b\"}\n```]")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("[```json\n{\"a\":\"b\"}\n```]")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("{```\n{\"a\":\"b\"}\n```}")).to eq("\n{\"a\":\"b\"}\n")
-        expect(JSON.repair("{```json\n{\"a\":\"b\"}\n```}")).to eq("\n{\"a\":\"b\"}\n")
+        expect(JSON.repair("[```\n{\"a\":\"b\"}\n```]")).to eq('{"a":"b"}')
+        expect(JSON.repair("[```json\n{\"a\":\"b\"}\n```]")).to eq('{"a":"b"}')
+        expect(JSON.repair("{```\n{\"a\":\"b\"}\n```}")).to eq('{"a":"b"}')
+        expect(JSON.repair("{```json\n{\"a\":\"b\"}\n```}")).to eq('{"a":"b"}')
       end
 
       it 'repairs escaped string contents' do
         expect(JSON.repair('\\"hello world\\"')).to eq('"hello world"')
         expect(JSON.repair('\\"hello world\\')).to eq('"hello world"')
-        expect(JSON.repair('\\"hello \\\\"world\\\\"\\')).to eq('"hello \\"world\\""')
-        expect(JSON.repair('[\\"hello \\\\"world\\\\"\\"]')).to eq('["hello \\"world\\""]')
+        expect(JSON.repair('\\"hello \\\\"world\\\\"\\')).to eq('"hello \"world\""')
+        expect(JSON.repair('[\\"hello \\\\"world\\\\"\\"]')).to eq('["hello \"world\""]')
         expect(JSON.repair('{\\"stringified\\": \\"hello \\\\"world\\\\"\\"}')).to \
-          eq('{"stringified": "hello \\"world\\""}')
+          eq('{"stringified":"hello \"world\""}')
 
         # TODO: Check this case
         # expect(JSON.repair('[\\"hello\\, \\"world\\"]')).to eq('["hello","world"]')
@@ -406,37 +406,37 @@ RSpec.describe JSON do
       it 'strips a leading comma from an array' do
         expect(JSON.repair('[,1,2,3]')).to eq('[1,2,3]')
         expect(JSON.repair('[/* a */,/* b */1,2,3]')).to eq('[1,2,3]')
-        expect(JSON.repair('[, 1,2,3]')).to eq('[ 1,2,3]')
-        expect(JSON.repair('[ , 1,2,3]')).to eq('[  1,2,3]')
+        expect(JSON.repair('[, 1,2,3]')).to eq('[1,2,3]')
+        expect(JSON.repair('[ , 1,2,3]')).to eq('[1,2,3]')
       end
 
       it 'strips a leading comma from an object' do
-        expect(JSON.repair('{,"message": "hi"}')).to eq('{"message": "hi"}')
-        expect(JSON.repair('{/* a */,/* b */"message": "hi"}')).to eq('{"message": "hi"}')
-        expect(JSON.repair('{ ,"message": "hi"}')).to eq('{ "message": "hi"}')
-        expect(JSON.repair('{, "message": "hi"}')).to eq('{ "message": "hi"}')
+        expect(JSON.repair('{,"message": "hi"}')).to eq('{"message":"hi"}')
+        expect(JSON.repair('{/* a */,/* b */"message": "hi"}')).to eq('{"message":"hi"}')
+        expect(JSON.repair('{ ,"message": "hi"}')).to eq('{"message":"hi"}')
+        expect(JSON.repair('{, "message": "hi"}')).to eq('{"message":"hi"}')
       end
 
       it 'strips trailing commas from an array' do
         expect(JSON.repair('[1,2,3,]')).to eq('[1,2,3]')
-        expect(JSON.repair("[1,2,3,\n]")).to eq("[1,2,3\n]")
-        expect(JSON.repair("[1,2,3,  \n  ]")).to eq("[1,2,3  \n  ]")
+        expect(JSON.repair("[1,2,3,\n]")).to eq('[1,2,3]')
+        expect(JSON.repair("[1,2,3,  \n  ]")).to eq('[1,2,3]')
         expect(JSON.repair('[1,2,3,/*foo*/]')).to eq('[1,2,3]')
         expect(JSON.repair('{"array":[1,2,3,]}')).to eq('{"array":[1,2,3]}')
       end
 
       it 'strips trailing commas from an object' do
         expect(JSON.repair('{"a":2,}')).to eq('{"a":2}')
-        expect(JSON.repair('{"a":2  ,  }')).to eq('{"a":2    }')
-        expect(JSON.repair("{\"a\":2  , \n }")).to eq("{\"a\":2   \n }")
+        expect(JSON.repair('{"a":2  ,  }')).to eq('{"a":2}')
+        expect(JSON.repair("{\"a\":2  , \n }")).to eq('{"a":2}')
         expect(JSON.repair('{"a":2/*foo*/,/*foo*/}')).to eq('{"a":2}')
         expect(JSON.repair('{},')).to eq('{}')
       end
 
       it 'strips trailing comma at the end' do
         expect(JSON.repair('4,')).to eq('4')
-        expect(JSON.repair('4 ,')).to eq('4 ')
-        expect(JSON.repair('4 , ')).to eq('4  ')
+        expect(JSON.repair('4 ,')).to eq('4')
+        expect(JSON.repair('4 , ')).to eq('4')
         expect(JSON.repair('{"a":2},')).to eq('{"a":2}')
         expect(JSON.repair('[1,2,3],')).to eq('[1,2,3]')
       end
@@ -446,17 +446,17 @@ RSpec.describe JSON do
         expect(JSON.repair('{"a":2')).to eq('{"a":2}')
         expect(JSON.repair('{"a":2,')).to eq('{"a":2}')
         expect(JSON.repair('{"a":{"b":2}')).to eq('{"a":{"b":2}}')
-        expect(JSON.repair("{\n  \"a\":{\"b\":2\n}")).to eq("{\n  \"a\":{\"b\":2\n}}")
+        expect(JSON.repair("{\n  \"a\":{\"b\":2\n}")).to eq('{"a":{"b":2}}')
         expect(JSON.repair('[{"b":2]')).to eq('[{"b":2}]')
-        expect(JSON.repair("[{\"b\":2\n]")).to eq("[{\"b\":2}\n]")
+        expect(JSON.repair("[{\"b\":2\n]")).to eq('[{"b":2}]')
         expect(JSON.repair('[{"i":1{"i":2}]')).to eq('[{"i":1},{"i":2}]')
         expect(JSON.repair('[{"i":1,{"i":2}]')).to eq('[{"i":1},{"i":2}]')
       end
 
       it 'removes a redundant closing bracket for an object' do
-        expect(JSON.repair('{"a": 1}}')).to eq('{"a": 1}')
-        expect(JSON.repair('{"a": 1}}]}')).to eq('{"a": 1}')
-        expect(JSON.repair('{"a": 1 }  }  ]  }  ')).to eq('{"a": 1 }        ')
+        expect(JSON.repair('{"a": 1}}')).to eq('{"a":1}')
+        expect(JSON.repair('{"a": 1}}]}')).to eq('{"a":1}')
+        expect(JSON.repair('{"a": 1 }  }  ]  }  ')).to eq('{"a":1}')
         expect(JSON.repair('{"a":2]')).to eq('{"a":2}')
         expect(JSON.repair('{"a":2,]')).to eq('{"a":2}')
         expect(JSON.repair('{}}')).to eq('{}')
@@ -470,8 +470,8 @@ RSpec.describe JSON do
         expect(JSON.repair('[1,2,3')).to eq('[1,2,3]')
         expect(JSON.repair('[1,2,3,')).to eq('[1,2,3]')
         expect(JSON.repair('[[1,2,3,')).to eq('[[1,2,3]]')
-        expect(JSON.repair("{\n\"values\":[1,2,3\n}")).to eq("{\n\"values\":[1,2,3]\n}")
-        expect(JSON.repair("{\n\"values\":[1,2,3\n")).to eq("{\n\"values\":[1,2,3]}\n")
+        expect(JSON.repair("{\n\"values\":[1,2,3\n}")).to eq('{"values":[1,2,3]}')
+        expect(JSON.repair("{\n\"values\":[1,2,3\n")).to eq('{"values":[1,2,3]}')
       end
 
       it 'strips MongoDB data types' do
@@ -494,19 +494,8 @@ RSpec.describe JSON do
           }
         MONGO_DOCUMENT
 
-        expected_json = <<~EXPECTED_JSON
-          {
-              "_id" : "123",
-              "isoDate" : "2012-12-19T06:01:17.171Z",
-              "regularNumber" : 67,
-              "long" : "2",
-              "long2" : 2,
-              "int" : "3",
-              "int2" : 3,
-              "decimal" : "4",
-              "decimal2" : 4
-          }
-        EXPECTED_JSON
+        expected_json = '{"_id":"123","isoDate":"2012-12-19T06:01:17.171Z","regularNumber":67,' \
+                        '"long":"2","long2":2,"int":"3","int2":3,"decimal":"4","decimal2":4}'
 
         expect(JSON.repair(mongo_document)).to eq(expected_json)
       end
@@ -515,9 +504,9 @@ RSpec.describe JSON do
         expect(JSON.repair('hello world')).to eq('"hello world"')
         expect(JSON.repair('She said: no way')).to eq('"She said: no way"')
         expect(JSON.repair('["This is C(2)", "This is F(3)]')).to \
-          eq('["This is C(2)", "This is F(3)"]')
+          eq('["This is C(2)","This is F(3)"]')
         expect(JSON.repair('["This is C(2)", This is F(3)]')).to \
-          eq('["This is C(2)", "This is F(3)"]')
+          eq('["This is C(2)","This is F(3)"]')
       end
 
       it 'replaces Python constants None, True, False' do
@@ -533,14 +522,14 @@ RSpec.describe JSON do
       it 'turns unknown symbols into a string' do
         expect(JSON.repair('foo')).to eq('"foo"')
         expect(JSON.repair('[1,foo,4]')).to eq('[1,"foo",4]')
-        expect(JSON.repair('{foo: bar}')).to eq('{"foo": "bar"}')
+        expect(JSON.repair('{foo: bar}')).to eq('{"foo":"bar"}')
         expect(JSON.repair('foo 2 bar')).to eq('"foo 2 bar"')
         expect(JSON.repair('{greeting: hello world}')).to \
-          eq('{"greeting": "hello world"}')
+          eq('{"greeting":"hello world"}')
         expect(JSON.repair("{greeting: hello world\nnext: \"line\"}")).to \
-          eq("{\"greeting\": \"hello world\",\n\"next\": \"line\"}")
+          eq('{"greeting":"hello world","next":"line"}')
         expect(JSON.repair('{greeting: hello world!}')).to \
-          eq('{"greeting": "hello world!"}')
+          eq('{"greeting":"hello world!"}')
       end
 
       it 'treats a lone minus followed by a non-digit as an unquoted string' do
@@ -555,13 +544,13 @@ RSpec.describe JSON do
           eq('"746de9ad-d4ff-4c66-97d7-00a92ad46967"')
         expect(JSON.repair('234..5')).to eq('"234..5"')
         expect(JSON.repair('[0.0.1,2]')).to eq('["0.0.1",2]')
-        expect(JSON.repair('[2 0.0.1 2]')).to eq('[2, "0.0.1 2"]')
+        expect(JSON.repair('[2 0.0.1 2]')).to eq('[2,"0.0.1 2"]')
         expect(JSON.repair('2e3.4')).to eq('"2e3.4"')
       end
 
       it 'repairs regular expressions' do
         expect(JSON.repair('{regex: /standalone-styles.css/}')).to \
-          eq('{"regex": "/standalone-styles.css/"}')
+          eq('{"regex":"/standalone-styles.css/"}')
         expect(JSON.repair('/[a-z]_/')).to eq('"/[a-z]_/"')
 
         # with escape char
@@ -577,7 +566,7 @@ RSpec.describe JSON do
         # which would be executed as JavaScript when this JSON is being parsed with `eval`.
         # See https://github.com/josdejong/jsonrepair/issues/150
         expect(JSON.repair('/foo"; console.log(-1); "/')).to \
-          eq('"/foo\\"; console.log(-1); \\"/"')
+          eq('"/foo\"; console.log(-1); \"/"')
       end
 
       it 'concatenates strings' do
@@ -586,94 +575,91 @@ RSpec.describe JSON do
         expect(JSON.repair('"a"+"b"+"c"')).to eq('"abc"')
         expect(JSON.repair('"hello" + /*comment*/ " world"')).to eq('"hello world"')
         expect(JSON.repair("{\n  \"greeting\": 'hello' +\n 'world'\n}")).to \
-          eq("{\n  \"greeting\": \"helloworld\"\n}")
+          eq('{"greeting":"helloworld"}')
         expect(JSON.repair("\"hello +\n \" world\"")).to eq('"hello world"')
         expect(JSON.repair('"hello +')).to eq('"hello"')
         expect(JSON.repair('["hello +]')).to eq('["hello"]')
       end
 
       it 'repairs missing comma between array items' do
-        expect(JSON.repair('{"array": [{}{}]}')).to eq('{"array": [{},{}]}')
-        expect(JSON.repair('{"array": [{} {}]}')).to eq('{"array": [{}, {}]}')
-        expect(JSON.repair("{\"array\": [{}\n{}]}")).to eq("{\"array\": [{},\n{}]}")
-        expect(JSON.repair("{\"array\": [\n{}\n{}\n]}")).to eq("{\"array\": [\n{},\n{}\n]}")
-        expect(JSON.repair("{\"array\": [\n1\n2\n]}")).to eq("{\"array\": [\n1,\n2\n]}")
-        expect(JSON.repair("{\"array\": [\n\"a\"\n\"b\"\n]}")).to eq("{\"array\": [\n\"a\",\n\"b\"\n]}")
+        expect(JSON.repair('{"array": [{}{}]}')).to eq('{"array":[{},{}]}')
+        expect(JSON.repair('{"array": [{} {}]}')).to eq('{"array":[{},{}]}')
+        expect(JSON.repair("{\"array\": [{}\n{}]}")).to eq('{"array":[{},{}]}')
+        expect(JSON.repair("{\"array\": [\n{}\n{}\n]}")).to eq('{"array":[{},{}]}')
+        expect(JSON.repair("{\"array\": [\n1\n2\n]}")).to eq('{"array":[1,2]}')
+        expect(JSON.repair("{\"array\": [\n\"a\"\n\"b\"\n]}")).to eq('{"array":["a","b"]}')
       end
 
       it 'repairs missing comma between object properties' do
-        expect(JSON.repair("{\"a\":2\n\"b\":3\n}")).to eq("{\"a\":2,\n\"b\":3\n}")
-        expect(JSON.repair("{\"a\":2\n\"b\":3\nc:4}")).to eq("{\"a\":2,\n\"b\":3,\n\"c\":4}")
+        expect(JSON.repair("{\"a\":2\n\"b\":3\n}")).to eq('{"a":2,"b":3}')
+        expect(JSON.repair("{\"a\":2\n\"b\":3\nc:4}")).to eq('{"a":2,"b":3,"c":4}')
         expect(JSON.repair("{\n  \"firstName\": \"John\"\n  lastName: Smith")).to \
-          eq("{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\"}")
+          eq('{"firstName":"John","lastName":"Smith"}')
         expect(JSON.repair("{\n  \"firstName\": \"John\" /* comment */ \n  lastName: Smith")).to \
-          eq("{\n  \"firstName\": \"John\",  \n  \"lastName\": \"Smith\"}")
+          eq('{"firstName":"John","lastName":"Smith"}')
 
         # verify parsing a comma after a return (since in parse_string we stop at a return)
         expect(JSON.repair("{\n  \"firstName\": \"John\"\n  ,  lastName: Smith")).to \
-          eq("{\n  \"firstName\": \"John\"\n  ,  \"lastName\": \"Smith\"}")
+          eq('{"firstName":"John","lastName":"Smith"}')
       end
 
       it 'repairs numbers at the end' do
         expect(JSON.repair('{"a":2.')).to eq('{"a":2.0}')
-        expect(JSON.repair('{"a":2e')).to eq('{"a":2e0}')
-        expect(JSON.repair('{"a":2e-')).to eq('{"a":2e-0}')
-        expect(JSON.repair('{"a":-')).to eq('{"a":-0}')
-        expect(JSON.repair('[2e,')).to eq('[2e0]')
-        expect(JSON.repair('[2e ')).to eq('[2e0] ')
-        expect(JSON.repair('[-,')).to eq('[-0]')
+        expect(JSON.repair('{"a":2e')).to eq('{"a":2.0}')
+        expect(JSON.repair('{"a":2e-')).to eq('{"a":2.0}')
+        expect(JSON.repair('{"a":-')).to eq('{"a":0}')
+        expect(JSON.repair('[2e,')).to eq('[2.0]')
+        expect(JSON.repair('[2e ')).to eq('[2.0]')
+        expect(JSON.repair('[-,')).to eq('[0]')
       end
 
       it 'repairs missing colon between object key and value' do
-        expect(JSON.repair('{"a" "b"}')).to eq('{"a": "b"}')
-        expect(JSON.repair('{"a" 2}')).to eq('{"a": 2}')
-        expect(JSON.repair('{"a" true}')).to eq('{"a": true}')
-        expect(JSON.repair('{"a" false}')).to eq('{"a": false}')
-        expect(JSON.repair('{"a" null}')).to eq('{"a": null}')
+        expect(JSON.repair('{"a" "b"}')).to eq('{"a":"b"}')
+        expect(JSON.repair('{"a" 2}')).to eq('{"a":2}')
+        expect(JSON.repair('{"a" true}')).to eq('{"a":true}')
+        expect(JSON.repair('{"a" false}')).to eq('{"a":false}')
+        expect(JSON.repair('{"a" null}')).to eq('{"a":null}')
         expect(JSON.repair('{"a"2}')).to eq('{"a":2}')
-        expect(JSON.repair("{\n\"a\" \"b\"\n}")).to eq("{\n\"a\": \"b\"\n}")
-        expect(JSON.repair('{"a" \'b\'}')).to eq('{"a": "b"}')
-        expect(JSON.repair("{'a' 'b'}")).to eq('{"a": "b"}')
-        expect(JSON.repair('{“a” “b”}')).to eq('{"a": "b"}')
-        expect(JSON.repair("{a 'b'}")).to eq('{"a": "b"}')
-        expect(JSON.repair('{a “b”}')).to eq('{"a": "b"}')
+        expect(JSON.repair("{\n\"a\" \"b\"\n}")).to eq('{"a":"b"}')
+        expect(JSON.repair('{"a" \'b\'}')).to eq('{"a":"b"}')
+        expect(JSON.repair("{'a' 'b'}")).to eq('{"a":"b"}')
+        expect(JSON.repair('{“a” “b”}')).to eq('{"a":"b"}')
+        expect(JSON.repair("{a 'b'}")).to eq('{"a":"b"}')
+        expect(JSON.repair('{a “b”}')).to eq('{"a":"b"}')
       end
 
       it 'repairs missing a combination of comma, quotes and brackets' do
-        expect(JSON.repair("{\"array\": [\na\nb\n]}")).to eq("{\"array\": [\n\"a\",\n\"b\"\n]}")
-        expect(JSON.repair("1\n2")).to eq("[\n1,\n2\n]")
-        expect(JSON.repair("[a,b\nc]")).to eq("[\"a\",\"b\",\n\"c\"]")
+        expect(JSON.repair("{\"array\": [\na\nb\n]}")).to eq('{"array":["a","b"]}')
+        expect(JSON.repair("1\n2")).to eq('[1,2]')
+        expect(JSON.repair("[a,b\nc]")).to eq('["a","b","c"]')
       end
 
       it 'repairs newline separated JSON (for example from MongoDB)' do
         text = "/* 1 */\n{}\n\n/* 2 */\n{}\n\n/* 3 */\n{}\n"
 
-        expected = "[\n\n{},\n\n\n{},\n\n\n{}\n\n]"
-
+        expected = '[{},{},{}]'
         expect(JSON.repair(text)).to eq(expected)
       end
 
       it 'repairs newline separated JSON having commas' do
         text = "/* 1 */\n{},\n\n/* 2 */\n{},\n\n/* 3 */\n{}\n"
 
-        expected = "[\n\n{},\n\n\n{},\n\n\n{}\n\n]"
-
+        expected = '[{},{},{}]'
         expect(JSON.repair(text)).to eq(expected)
       end
 
       it 'repairs newline separated JSON having commas and trailing comma' do
         text = "/* 1 */\n{},\n\n/* 2 */\n{},\n\n/* 3 */\n{},\n"
 
-        expected = "[\n\n{},\n\n\n{},\n\n\n{}\n\n]"
-
+        expected = '[{},{},{}]'
         expect(JSON.repair(text)).to eq(expected)
       end
 
       it 'repairs a comma separated list with value' do
-        expect(JSON.repair('1,2,3')).to eq("[\n1,2,3\n]")
-        expect(JSON.repair('1,2,3,')).to eq("[\n1,2,3\n]")
-        expect(JSON.repair("1\n2\n3")).to eq("[\n1,\n2,\n3\n]")
-        expect(JSON.repair("a\nb")).to eq("[\n\"a\",\n\"b\"\n]")
+        expect(JSON.repair('1,2,3')).to eq('[1,2,3]')
+        expect(JSON.repair('1,2,3,')).to eq('[1,2,3]')
+        expect(JSON.repair("1\n2\n3")).to eq('[1,2,3]')
+        expect(JSON.repair("a\nb")).to eq('["a","b"]')
       end
 
       it 'repairs a number with leading zero' do
@@ -831,11 +817,73 @@ RSpec.describe JSON do
 
     context 'with return_objects: false (default)' do
       it 'returns the repaired string when omitted' do
-        expect(JSON.repair('{a: 1}')).to eq('{"a": 1}')
+        expect(JSON.repair('{a: 1}')).to eq('{"a":1}')
       end
 
       it 'returns the repaired string when explicitly false' do
-        expect(JSON.repair('{a: 1}', return_objects: false)).to eq('{"a": 1}')
+        expect(JSON.repair('{a: 1}', return_objects: false)).to eq('{"a":1}')
+      end
+    end
+
+    context 'with the stdlib JSON.parse fast path' do
+      it 'returns canonical JSON for already-valid input without invoking the repairer' do
+        expect(JSON::Repairer).not_to receive(:new)
+        expect(JSON.repair('{"a": 1, "b": [2, 3]}')).to eq('{"a":1,"b":[2,3]}')
+      end
+
+      it 'collapses whitespace on the fast path' do
+        expect(JSON::Repairer).not_to receive(:new)
+        expect(JSON.repair("  { \"a\" : 1 } \t ")).to eq('{"a":1}')
+      end
+
+      it 'returns the parsed value on the fast path when return_objects: true' do
+        expect(JSON::Repairer).not_to receive(:new)
+        expect(JSON.repair('{"a": 1}', return_objects: true)).to eq({ 'a' => 1 })
+      end
+
+      it 'falls through to the repairer when stdlib JSON.parse raises' do
+        expect(JSON.repair('{a: 1}')).to eq('{"a":1}')
+      end
+
+      it 'falls through for newline-delimited JSON at the root (stdlib rejects)' do
+        expect(JSON.repair("{\"a\":1}\n{\"b\":2}")).to eq('[{"a":1},{"b":2}]')
+      end
+
+      it 'falls through for markdown-fenced JSON (stdlib rejects)' do
+        expect(JSON.repair("```json\n{\"a\":1}\n```")).to eq('{"a":1}')
+      end
+
+      it 'falls through for empty input' do
+        expect { JSON.repair('') }.to raise_error(JSON::JSONRepairError)
+      end
+
+      it 'collapses duplicate object keys to last-write-wins' do
+        # The round-trip goes through a Ruby Hash, which only keeps one
+        # value per key. Behavior is the same on the slow path because
+        # the repaired string is itself parsed through Hash before being
+        # re-serialized.
+        expect(JSON.repair('{"a":1,"a":2,"b":3}')).to eq('{"a":2,"b":3}')
+        expect(JSON.repair('{"a":1,"a":2,"b":3}', skip_json_loads: true)).to eq('{"a":2,"b":3}')
+      end
+
+      it 'forces the slow path when skip_json_loads: true' do
+        # Negative number so the repairer's parse_number branch for the
+        # digit-after-minus-sign path stays covered even though the fast
+        # path would otherwise handle this input.
+        input = '[-1, "a"]'
+        expect(JSON::Repairer).to receive(:new).with(input).and_call_original
+        expect(JSON.repair(input, skip_json_loads: true)).to eq('[-1,"a"]')
+      end
+
+      it 'uses the fast path when skip_json_loads: false (explicit default)' do
+        expect(JSON::Repairer).not_to receive(:new)
+        expect(JSON.repair('{"a": 1}', skip_json_loads: false)).to eq('{"a":1}')
+      end
+
+      it 'composes skip_json_loads: true with return_objects: true' do
+        expect(JSON::Repairer).to receive(:new).and_call_original
+        expect(JSON.repair('{"a": 1}', skip_json_loads: true, return_objects: true))
+          .to eq({ 'a' => 1 })
       end
     end
   end

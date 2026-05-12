@@ -75,8 +75,7 @@ module JSON
         elsif (output_path = @output_path)
           File.write(output_path, repaired)
         else
-          @stdout.write(repaired)
-          @stdout.write("\n") unless repaired.end_with?("\n")
+          @stdout.write(repaired, "\n")
         end
       end
 

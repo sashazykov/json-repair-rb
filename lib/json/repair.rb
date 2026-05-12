@@ -15,8 +15,20 @@ module JSON
     end
   end
 
-  def self.repair(json, return_objects: false)
-    repaired = Repairer.new(json).repair
-    return_objects ? JSON.parse(repaired) : repaired
+  def self.repair(json, return_objects: false, skip_json_loads: false)
+    parsed = skip_json_loads ? repaired_parse(json) : tolerant_parse(json)
+    return_objects ? parsed : JSON.generate(parsed)
   end
+
+  def self.tolerant_parse(json)
+    JSON.parse(json)
+  rescue JSON::ParserError
+    repaired_parse(json)
+  end
+  private_class_method :tolerant_parse
+
+  def self.repaired_parse(json)
+    JSON.parse(Repairer.new(json).repair)
+  end
+  private_class_method :repaired_parse
 end

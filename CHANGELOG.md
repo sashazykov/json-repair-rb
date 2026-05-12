@@ -1,5 +1,32 @@
 # Changes
 
+### 2026-05-12 (0.7.0)
+
+* `JSON.repair` now always returns canonical JSON via
+  `JSON.generate`. When the input is already valid JSON, stdlib
+  `JSON.parse` handles it directly; when it isn't, the repairer
+  produces an intermediate string that's then re-parsed and serialized
+  the same way. Both paths converge on the same output for any given
+  input, so `JSON.repair(json)` and
+  `JSON.repair(json, skip_json_loads: true)` agree on result and only
+  differ in how they got there.
+* **Breaking:** outputs are now canonical instead of preserving the
+  input's exact formatting. Whitespace is collapsed
+  (`'{"a": 1}'` → `'{"a":1}'`), numbers are normalized
+  (`2300e3` → `2300000.0`, `-0` → `0`), `\uXXXX` escapes are decoded
+  to their literal characters, `\/` is unescaped to `/`, and objects
+  with duplicate keys are collapsed to the last-write-wins form
+  (`{"a":1,"a":2}` → `{"a":2}`). Callers that need a parsed Ruby
+  value can opt out of the final `JSON.generate` step with
+  `return_objects: true`.
+* `skip_json_loads:` keyword argument added (default `false`,
+  mirroring Python's
+  [`json_repair`](https://github.com/mangiucugna/json_repair)
+  option). Passing `true` skips the stdlib `JSON.parse` fast attempt
+  and routes the input through the repairer first; the final output
+  is identical, so the option is purely a performance knob for
+  callers who know their input will need repair.
+
 ### 2026-05-12 (0.6.0)
 
 * `JSON.repair` accepts a `return_objects:` keyword argument. Pass

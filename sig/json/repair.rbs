@@ -9,7 +9,13 @@ module JSON
     VERSION: ::String
   end
 
-  def self.repair: (::String json) -> ::String
-                 | (::String json, return_objects: false) -> ::String
-                 | (::String json, return_objects: true) -> untyped
+  def self.repair: (::String json, return_objects: false, ?skip_json_loads: bool) -> ::String
+                 | (::String json, return_objects: true, ?skip_json_loads: bool) -> untyped
+                 | (::String json, ?skip_json_loads: bool) -> ::String
+
+  private
+
+  def self.tolerant_parse: (::String json) -> untyped
+
+  def self.repaired_parse: (::String json) -> untyped
 end
