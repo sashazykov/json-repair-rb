@@ -97,6 +97,34 @@ RSpec.describe JSON::Repair::CLI do
       end
     end
 
+    it 'follows symlinks and rewrites the target, leaving the link intact' do
+      Dir.mktmpdir do |dir|
+        target = File.join(dir, 'real.json')
+        link = File.join(dir, 'link.json')
+        File.write(target, '{a:1,}')
+        File.symlink(target, link)
+
+        status, _out, err = run([link, '--overwrite'])
+
+        expect(status).to eq(0)
+        expect(err).to eq('')
+        expect(File.symlink?(link)).to be(true)
+        expect(File.readlink(link)).to eq(target)
+        expect(File.read(target)).to eq('{"a":1}')
+      end
+    end
+
+    it 'reports a clean error for a broken symlink' do
+      Dir.mktmpdir do |dir|
+        link = File.join(dir, 'dangling.json')
+        File.symlink(File.join(dir, 'missing.json'), link)
+        status, _out, err = run([link, '--overwrite'])
+        expect(status).to eq(1)
+        expect(err).to include('json-repair:')
+        expect(err).not_to match(/\.rb:\d+:in/)
+      end
+    end
+
     it 'preserves the original file mode' do
       Tempfile.create(['broken', '.json']) do |f|
         f.write('{a:1,}')
@@ -187,6 +215,39 @@ RSpec.describe JSON::Repair::CLI do
       status, _out, err = run(['a.json', 'b.json'])
       expect(status).to eq(1)
       expect(err).to include('unexpected argument: b.json')
+    end
+  end
+
+  describe 'unrecoverable errors' do
+    it 'reports a clean error for input that is not valid UTF-8 from stdin' do
+      status, out, err = run([], stdin: "{\"a\":\"\xff\xfe\"}".b)
+      expect(status).to eq(1)
+      expect(out).to eq('')
+      expect(err).to include('json-repair:')
+      expect(err).to match(/utf-?8/i)
+      expect(err).not_to match(/\.rb:\d+:in/)
+    end
+
+    it 'reports a clean error for a file with invalid UTF-8 bytes' do
+      Tempfile.create(['bad', '.json']) do |f|
+        f.binmode
+        f.write("{\"a\":\"\xff\xfe\"}".b)
+        f.close
+        status, _out, err = run([f.path])
+        expect(status).to eq(1)
+        expect(err).to include('json-repair:')
+        expect(err).to match(/utf-?8/i)
+        expect(err).not_to match(/\.rb:\d+:in/)
+      end
+    end
+
+    it 'reports a clean error when the parser overflows the Ruby stack' do
+      allow(JSON).to receive(:repair).and_raise(SystemStackError, 'stack level too deep')
+      status, _out, err = run([], stdin: '[]')
+      expect(status).to eq(1)
+      expect(err).to include('json-repair:')
+      expect(err).to include('stack level too deep')
+      expect(err).not_to match(/\.rb:\d+:in/)
     end
   end
 

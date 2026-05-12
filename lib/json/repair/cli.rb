@@ -24,7 +24,8 @@ module JSON
         @output_path = @halt = nil
         @overwrite = false
         run(argv)
-      rescue OptionParser::ParseError, JSON::JSONRepairError, SystemCallError, IOError => e
+      rescue OptionParser::ParseError, JSON::JSONRepairError, SystemCallError, IOError,
+             SystemStackError => e
         @stderr.puts "json-repair: #{e.message}"
         1
       end
@@ -60,7 +61,11 @@ module JSON
       end
 
       def read_input(input_path)
-        input_path ? File.read(input_path) : @stdin.read
+        raw = input_path ? File.read(input_path) : @stdin.read
+        raw.force_encoding(Encoding::UTF_8)
+        raise JSON::JSONRepairError, 'input is not valid UTF-8' unless raw.valid_encoding?
+
+        raw
       end
 
       def write_output(repaired, input_path)
@@ -80,13 +85,18 @@ module JSON
       # with force: true handles cross-device renames and Windows, where
       # File.rename cannot overwrite an existing destination. The original
       # file's mode is preserved (Tempfile defaults to 0600).
+      #
+      # Symlinks are followed via File.realpath so the underlying file is
+      # rewritten in place and the link is left pointing at it; otherwise
+      # the rename would replace the link itself with a regular file.
       def replace_in_place(input_path, repaired)
-        original_mode = File.stat(input_path).mode
-        Tempfile.create(['json-repair', '.tmp'], File.dirname(input_path)) do |tmp|
+        real_path = File.realpath(input_path)
+        original_mode = File.stat(real_path).mode
+        Tempfile.create(['json-repair', '.tmp'], File.dirname(real_path)) do |tmp|
           tmp.write(repaired)
           tmp.close
           File.chmod(original_mode, tmp.path)
-          FileUtils.mv(tmp.path, input_path, force: true)
+          FileUtils.mv(tmp.path, real_path, force: true)
         end
       end
 
