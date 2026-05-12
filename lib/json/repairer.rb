@@ -227,9 +227,19 @@ module JSON
           if processed_colon || truncated_text
             # repair missing object value
             @output << 'null'
+          # :nocov:
           else
+            # Unreachable through JSON.repair: if we got here, the colon-repair
+            # branch above ran, which required start_of_value? to be true. Every
+            # char that satisfies start_of_value? (see REGEX_START_OF_VALUE plus
+            # quote chars) is consumable by some parse_* method, so parse_value
+            # cannot return false in this state. Preserved for parity with the
+            # upstream JS parser; if a future change to REGEX_START_OF_VALUE or
+            # parse_unquoted_string invalidates that invariant, this branch
+            # becomes live and the :nocov: will hide it.
             throw_colon_expected
           end
+          # :nocov:
         end
       end
 
@@ -725,10 +735,17 @@ module JSON
         processed_value = parse_value
       end
 
+      # The `unless processed_value` wrapper is preserved for parity with the
+      # upstream JS parse_newline_delimited_json. The body always runs because
+      # the `while processed_value` loop above only exits when processed_value
+      # is falsy; the :nocov: suppresses the implicit-else branch from branch
+      # coverage, not unreachable body code.
+      # :nocov:
       unless processed_value
         # repair: remove trailing comma
         @output = strip_last_occurrence(@output, ',')
       end
+      # :nocov:
 
       # repair: wrap the output inside array brackets
       @output = "[\n#{@output}\n]"

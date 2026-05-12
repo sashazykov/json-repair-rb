@@ -543,6 +543,11 @@ RSpec.describe JSON do
           eq('{"greeting": "hello world!"}')
       end
 
+      it 'treats a lone minus followed by a non-digit as an unquoted string' do
+        expect(JSON.repair('-x')).to eq('"-x"')
+        expect(JSON.repair('[-foo]')).to eq('["-foo"]')
+      end
+
       it 'turns invalid numbers into strings' do
         expect(JSON.repair('ES2020')).to eq('"ES2020"')
         expect(JSON.repair('0.0.1')).to eq('"0.0.1"')

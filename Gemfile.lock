@@ -26,6 +26,7 @@ GEM
     connection_pool (3.0.2)
     csv (3.3.5)
     diff-lcs (1.5.1)
+    docile (1.4.1)
     drb (2.2.3)
     ffi (1.17.4)
     ffi (1.17.4-arm64-darwin)
@@ -87,6 +88,12 @@ GEM
       parser (>= 3.3.1.0)
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.13.2)
+    simplecov_json_formatter (0.1.4)
     steep (1.9.4)
       activesupport (>= 5.1)
       concurrent-ruby (>= 1.1.10)
@@ -122,6 +129,7 @@ DEPENDENCIES
   rbs (~> 3.4)
   rspec (~> 3.0)
   rubocop (~> 1.21)
+  simplecov (~> 0.22)
   steep (~> 1.7)
 
 BUNDLED WITH

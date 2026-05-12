@@ -11,5 +11,6 @@ group :development, :test do
   gem 'rubocop', '~> 1.21'
 
   gem 'rbs', '~> 3.4'
+  gem 'simplecov', '~> 0.22', require: false
   gem 'steep', '~> 1.7'
 end
