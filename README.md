@@ -31,6 +31,13 @@ puts repaired_json  # Outputs: {"name": "Alice", "age": 25}
 
 The `repair` method takes a string containing JSON data and returns a corrected version of this string, ensuring it is valid JSON.
 
+Pass `return_objects: true` to get the parsed Ruby value (Hash, Array, or scalar) instead of a string:
+
+```ruby
+JSON.repair('{a: 1, b: [2, 3,]}', return_objects: true)
+# => {"a" => 1, "b" => [2, 3]}
+```
+
 ## Command line
 
 The gem ships a `json-repair` executable. It reads from stdin or a file and writes to stdout, `--output FILE`, or back over the input file with `--overwrite`.

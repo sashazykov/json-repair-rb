@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 require_relative 'repair/version'
 require_relative 'repairer'
 
@@ -13,7 +15,8 @@ module JSON
     end
   end
 
-  def self.repair(json)
-    Repairer.new(json).repair
+  def self.repair(json, return_objects: false)
+    repaired = Repairer.new(json).repair
+    return_objects ? JSON.parse(repaired) : repaired
   end
 end

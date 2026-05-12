@@ -10,4 +10,6 @@ module JSON
   end
 
   def self.repair: (::String json) -> ::String
+                 | (::String json, return_objects: false) -> ::String
+                 | (::String json, return_objects: true) -> untyped
 end

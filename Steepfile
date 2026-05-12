@@ -7,4 +7,5 @@ target :lib do
   library 'optparse'
   library 'tempfile'
   library 'fileutils'
+  library 'json'
 end

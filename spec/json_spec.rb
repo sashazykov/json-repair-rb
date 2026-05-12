@@ -789,5 +789,54 @@ RSpec.describe JSON do
         end
       end
     end
+
+    context 'with return_objects: true' do
+      it 'returns a Hash for an object input' do
+        expect(JSON.repair('{"a": 1}', return_objects: true)).to eq({ 'a' => 1 })
+      end
+
+      it 'returns an Array for an array input' do
+        expect(JSON.repair('[1, 2, 3]', return_objects: true)).to eq([1, 2, 3])
+      end
+
+      it 'parses the repaired form, not the original broken input' do
+        expect(JSON.repair("{a: 'b', c: [1, 2,]}", return_objects: true))
+          .to eq({ 'a' => 'b', 'c' => [1, 2] })
+      end
+
+      it 'returns scalar values' do
+        expect(JSON.repair('true', return_objects: true)).to be(true)
+        expect(JSON.repair('null', return_objects: true)).to be_nil
+        expect(JSON.repair('42', return_objects: true)).to eq(42)
+        expect(JSON.repair('"hi"', return_objects: true)).to eq('hi')
+        expect(JSON.repair('""', return_objects: true)).to eq('')
+      end
+
+      it 'handles deeply nested structures' do
+        expect(JSON.repair('{"a":{"b":{"c":[1,2,[3,4]]}}}', return_objects: true))
+          .to eq({ 'a' => { 'b' => { 'c' => [1, 2, [3, 4]] } } })
+      end
+
+      it 'composes with heavy repairs (markdown fence + unquoted keys + smart quotes)' do
+        broken = "```json\n{name: “Alice”, age: 25}\n```"
+        expect(JSON.repair(broken, return_objects: true))
+          .to eq({ 'name' => 'Alice', 'age' => 25 })
+      end
+
+      it 'still raises JSONRepairError on unrecoverable input' do
+        expect { JSON.repair('', return_objects: true) }.to \
+          raise_error(JSON::JSONRepairError)
+      end
+    end
+
+    context 'with return_objects: false (default)' do
+      it 'returns the repaired string when omitted' do
+        expect(JSON.repair('{a: 1}')).to eq('{"a": 1}')
+      end
+
+      it 'returns the repaired string when explicitly false' do
+        expect(JSON.repair('{a: 1}', return_objects: false)).to eq('{"a": 1}')
+      end
+    end
   end
 end

@@ -1,5 +1,14 @@
 # Changes
 
+### 2026-05-12 (0.6.0)
+
+* `JSON.repair` accepts a `return_objects:` keyword argument. Pass
+  `return_objects: true` to receive the parsed Ruby value (Hash, Array,
+  or scalar) instead of a serialized JSON string. Default is `false`,
+  preserving the existing return-a-string contract. Mirrors Python's
+  `return_objects` option on
+  [`json_repair`](https://github.com/mangiucugna/json_repair).
+
 ### 2026-05-12 (0.5.0)
 
 * `JSON::JSONRepairError#position` returns the input index at which the
