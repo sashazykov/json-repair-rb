@@ -7,7 +7,7 @@ module JSON
   class JSONRepairError < StandardError
     attr_reader :position
 
-    def initialize(message, position = nil)
+    def initialize(message = nil, position = nil)
       super(position.nil? ? message : "#{message} at index #{position}")
       @position = position
     end

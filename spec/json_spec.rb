@@ -771,6 +771,11 @@ RSpec.describe JSON do
         it 'is nil when JSONRepairError is constructed without a position' do
           expect(JSON::JSONRepairError.new('boom').position).to be_nil
         end
+
+        it 'preserves the StandardError zero-arg construction contract' do
+          expect { JSON::JSONRepairError.new }.not_to raise_error
+          expect { raise JSON::JSONRepairError }.to raise_error(JSON::JSONRepairError)
+        end
       end
     end
   end
