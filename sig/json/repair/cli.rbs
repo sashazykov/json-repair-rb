@@ -5,6 +5,9 @@ module JSON
       # and the specs inject `::StringIO` instances.
       type stream = ::IO | ::StringIO
 
+      # Marked `private_constant` in `lib/json/repair/cli.rb`. RBS has no
+      # `private_constant` syntax, so the declaration is unavoidably public
+      # in the signature; do not rely on it from outside this class.
       OVERWRITE_DESC: ::String
 
       @stdin: stream
