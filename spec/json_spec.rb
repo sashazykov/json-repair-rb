@@ -776,6 +776,12 @@ RSpec.describe JSON do
           expect { JSON::JSONRepairError.new }.not_to raise_error
           expect { raise JSON::JSONRepairError }.to raise_error(JSON::JSONRepairError)
         end
+
+        it 'does not emit a malformed "at index N" message when message is nil' do
+          err = JSON::JSONRepairError.new(nil, 5)
+          expect(err.position).to eq(5)
+          expect(err.message).to eq('JSON::JSONRepairError')
+        end
       end
     end
   end

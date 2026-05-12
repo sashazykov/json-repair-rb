@@ -8,7 +8,7 @@ module JSON
     attr_reader :position
 
     def initialize(message = nil, position = nil)
-      super(position.nil? ? message : "#{message} at index #{position}")
+      super(message && position ? "#{message} at index #{position}" : message)
       @position = position
     end
   end
