@@ -1,4 +1,4 @@
-name: Rspec & Rubocop
+name: Rspec, Rubocop & Steep
 
 on:
   push:
@@ -27,3 +27,7 @@ jobs:
       run: bundle exec rspec
     - name: Run rubocop
       run: bundle exec rubocop
+    - name: Validate RBS signatures
+      run: bundle exec rbs validate
+    - name: Run steep type check
+      run: bundle exec steep check

@@ -5,13 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `bin/setup` — install dependencies via Bundler.
-- `bundle exec rake` — default task; runs both RSpec and RuboCop.
+- `bundle exec rake` — default task; runs RSpec, RuboCop, and Steep.
 - `bundle exec rspec` — run the test suite.
 - `bundle exec rspec spec/json_spec.rb:42` — run a single example by line number; nearly all behavioral specs live in `spec/json_spec.rb`.
 - `bundle exec rubocop` — lint. Project-specific exclusions in `.rubocop.yml` deliberately disable several `Metrics/*` cops for `lib/json/repairer.rb` and `lib/json/repair/string_utils.rb` because the parser is long by design — don't try to "fix" it by chopping methods up.
 - `bin/console` — IRB with the gem preloaded.
 - `bundle exec rake install` / `bundle exec rake release` — local install / publish to rubygems.org.
-- Type checking: `Steepfile` checks `lib/` against `sig/`. Run `bundle exec steep check` if/when steep is installed (not in `Gemfile` by default).
+- Type checking: `Steepfile` checks `lib/` against `sig/`. `bundle exec steep check` (typecheck) and `bundle exec rbs validate` (sig syntax) both run in CI and as part of the default rake task. `steep` and `rbs` are dev dependencies in the `Gemfile`.
 
 Ruby `>= 3.0.0` is required (per gemspec). CI runs against Ruby 3.3.1.
 

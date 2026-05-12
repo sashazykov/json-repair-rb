@@ -34,7 +34,8 @@ module JSON
 
       def run(argv)
         positional = catch(:halt) { parser.parse(argv) }
-        return @halt if @halt
+        halt = @halt
+        return halt if halt
 
         input_path = positional.first
         return 1 unless validate(positional, input_path)
@@ -61,7 +62,7 @@ module JSON
       end
 
       def read_input(input_path)
-        raw = input_path ? File.read(input_path) : @stdin.read
+        raw = (input_path ? File.read(input_path) : @stdin.read).to_s
         raw.force_encoding(Encoding::UTF_8)
         raise JSON::JSONRepairError, 'input is not valid UTF-8' unless raw.valid_encoding?
 
@@ -69,10 +70,10 @@ module JSON
       end
 
       def write_output(repaired, input_path)
-        if @overwrite
+        if @overwrite && input_path
           replace_in_place(input_path, repaired)
-        elsif @output_path
-          File.write(@output_path, repaired)
+        elsif (output_path = @output_path)
+          File.write(output_path, repaired)
         else
           @stdout.write(repaired)
           @stdout.write("\n") unless repaired.end_with?("\n")

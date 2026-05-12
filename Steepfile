@@ -3,4 +3,8 @@
 target :lib do
   signature 'sig'
   check 'lib'
+
+  library 'optparse'
+  library 'tempfile'
+  library 'fileutils'
 end

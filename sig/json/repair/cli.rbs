@@ -6,11 +6,40 @@ module JSON
       # that implements `#read` / `#write` / `#puts` would work too.
       type stream = ::IO | ::StringIO
 
+      OVERWRITE_DESC: ::String
+
+      @stdin: stream
+      @stdout: stream
+      @stderr: stream
+      @output_path: ::String?
+      @halt: ::Integer?
+      @overwrite: bool
+
       def self.call: (::Array[::String] argv, ?stdin: stream, ?stdout: stream, ?stderr: stream) -> ::Integer
 
       def initialize: (?stdin: stream, ?stdout: stream, ?stderr: stream) -> void
 
       def call: (::Array[::String] argv) -> ::Integer
+
+      private
+
+      def run: (::Array[::String] argv) -> ::Integer
+
+      def validate: (::Array[::String] positional, ::String? input_path) -> bool
+
+      def validation_error: (::Array[::String] positional, ::String? input_path) -> ::String?
+
+      def read_input: (::String? input_path) -> ::String
+
+      def write_output: (::String repaired, ::String? input_path) -> void
+
+      def replace_in_place: (::String input_path, ::String repaired) -> void
+
+      def parser: () -> ::OptionParser
+
+      def define_options: (::OptionParser opts) -> void
+
+      def halt_with: (::String message) -> void
     end
   end
 end

@@ -1,6 +1,15 @@
 module JSON
   class Repairer
-    @json: ::String
+    # `untyped` (not `::String`) because the parser idiomatically uses
+    # `@json[@index]` past EOF, relying on Ruby returning `nil` as a
+    # sentinel. Declaring `@json: ::String` makes steep infer `String?`
+    # from `String#[]` and rejects ~15 downstream call sites that pass
+    # the result to methods expecting `String`. Tightening would either
+    # require pervasive nil-extraction at every indexing site or a
+    # private accessor — both of which break parity with the upstream
+    # JS source (see CLAUDE.md and `.rubocop.yml` exceptions for
+    # `lib/json/repairer.rb`).
+    @json: untyped
 
     @index: Integer
 
