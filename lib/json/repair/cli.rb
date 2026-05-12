@@ -33,7 +33,7 @@ module JSON
       private
 
       def run(argv)
-        positional = parser.parse(argv)
+        positional = catch(:halt) { parser.parse(argv) }
         return @halt if @halt
 
         input_path = positional.first
@@ -120,9 +120,13 @@ module JSON
         opts.on('-h', '--help', 'Print this help and exit') { halt_with(opts.help) }
       end
 
+      # Print to stdout and short-circuit `parser.parse` so trailing args
+      # after --version/--help do not raise OptionParser::ParseError and
+      # flip the exit code (the option text promises "...and exit").
       def halt_with(message)
         @stdout.puts message
         @halt = 0
+        throw :halt
       end
     end
   end

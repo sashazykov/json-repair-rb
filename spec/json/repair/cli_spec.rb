@@ -179,6 +179,13 @@ RSpec.describe JSON::Repair::CLI do
       expect(status).to eq(0)
       expect(out.strip).to eq(JSON::Repair::VERSION)
     end
+
+    it 'short-circuits parsing so trailing junk does not flip the exit code' do
+      status, out, err = run(['--version', '--bogus'])
+      expect(status).to eq(0)
+      expect(out.strip).to eq(JSON::Repair::VERSION)
+      expect(err).to eq('')
+    end
   end
 
   describe '--help' do
@@ -193,6 +200,13 @@ RSpec.describe JSON::Repair::CLI do
     it 'documents that --overwrite conflicts with --output' do
       _, out, = run(['--help'])
       expect(out).to match(/--overwrite[^\n]*conflicts with --output/)
+    end
+
+    it 'short-circuits parsing so trailing junk does not flip the exit code' do
+      status, out, err = run(['--help', '--bogus'])
+      expect(status).to eq(0)
+      expect(out).to include('Usage: json-repair')
+      expect(err).to eq('')
     end
   end
 
