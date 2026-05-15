@@ -65,7 +65,7 @@ File.open('broken.json') { |io| JSON.repair_io(io) }
 JSON.repair_io($stdin)
 ```
 
-`repair_io` does not close the IO — the caller manages its lifecycle.
+`JSON.repair_io` does not close the IO — the caller manages its lifecycle.
 
 ## Command line
 
