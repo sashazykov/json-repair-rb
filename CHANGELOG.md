@@ -1,5 +1,16 @@
 # Changes
 
+### 2026-05-15 (0.8.0)
+
+* `JSON.repair_file(path)` and `JSON.repair_io(io)` convenience
+  wrappers around `JSON.repair`. `repair_file` reads a path from disk
+  (accepts a `String` or `Pathname`); `repair_io` reads from any
+  object responding to `#read` (e.g. `File`, `StringIO`, `$stdin`)
+  without closing it. Both forward `return_objects:` and
+  `skip_json_loads:` through to `JSON.repair`. Mirrors Python's
+  [`json_repair`](https://github.com/mangiucugna/json_repair)
+  `load` / `from_file` helpers.
+
 ### 2026-05-12 (0.7.0)
 
 * `JSON.repair` now always returns canonical JSON via

@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require 'pathname'
+require 'stringio'
+require 'tempfile'
+
 RSpec.describe JSON do
   describe '.repair' do
     it 'parses a valid JSON' do
@@ -884,6 +888,91 @@ RSpec.describe JSON do
         expect(JSON::Repairer).to receive(:new).and_call_original
         expect(JSON.repair('{"a": 1}', skip_json_loads: true, return_objects: true))
           .to eq({ 'a' => 1 })
+      end
+    end
+  end
+
+  describe '.repair_io' do
+    it 'repairs JSON read from a StringIO' do
+      io = StringIO.new('{a: 1, b: [2, 3,]}')
+      expect(JSON.repair_io(io)).to eq('{"a":1,"b":[2,3]}')
+    end
+
+    it 'repairs JSON read from a File handle' do
+      Tempfile.create(['broken', '.json']) do |tmp|
+        tmp.write("```json\n{a: 1}\n```")
+        tmp.rewind
+        expect(JSON.repair_io(tmp)).to eq('{"a":1}')
+      end
+    end
+
+    it 'forwards return_objects: to JSON.repair' do
+      io = StringIO.new('{a: 1, b: [2, 3,]}')
+      expect(JSON.repair_io(io, return_objects: true))
+        .to eq({ 'a' => 1, 'b' => [2, 3] })
+    end
+
+    it 'forwards skip_json_loads: to JSON.repair' do
+      io = StringIO.new('{"a": 1}')
+      expect(JSON::Repairer).to receive(:new).and_call_original
+      expect(JSON.repair_io(io, skip_json_loads: true)).to eq('{"a":1}')
+    end
+
+    it 'raises JSONRepairError for empty input' do
+      expect { JSON.repair_io(StringIO.new('')) }.to \
+        raise_error(JSON::JSONRepairError)
+    end
+
+    it 'does not close the IO' do
+      io = StringIO.new('{"a": 1}')
+      JSON.repair_io(io)
+      expect(io.closed?).to be(false)
+    end
+
+    it 'consumes whatever the IO yields from #read (does not rewind)' do
+      io = StringIO.new('{"a": 1}{"b": 2}')
+      io.read(8)
+      expect(JSON.repair_io(io)).to eq('{"b":2}')
+    end
+  end
+
+  describe '.repair_file' do
+    it 'repairs JSON read from a file path' do
+      Tempfile.create(['broken', '.json']) do |tmp|
+        tmp.write('{a: 1, b: [2, 3,]}')
+        tmp.close
+        expect(JSON.repair_file(tmp.path)).to eq('{"a":1,"b":[2,3]}')
+      end
+    end
+
+    it 'forwards return_objects: to JSON.repair' do
+      Tempfile.create(['broken', '.json']) do |tmp|
+        tmp.write('{a: 1, b: [2, 3,]}')
+        tmp.close
+        expect(JSON.repair_file(tmp.path, return_objects: true))
+          .to eq({ 'a' => 1, 'b' => [2, 3] })
+      end
+    end
+
+    it 'forwards skip_json_loads: to JSON.repair' do
+      Tempfile.create(['valid', '.json']) do |tmp|
+        tmp.write('{"a": 1}')
+        tmp.close
+        expect(JSON::Repairer).to receive(:new).and_call_original
+        expect(JSON.repair_file(tmp.path, skip_json_loads: true)).to eq('{"a":1}')
+      end
+    end
+
+    it 'raises Errno::ENOENT for a missing file' do
+      expect { JSON.repair_file('/nonexistent/path/does/not/exist.json') }.to \
+        raise_error(Errno::ENOENT)
+    end
+
+    it 'accepts Pathname instances' do
+      Tempfile.create(['broken', '.json']) do |tmp|
+        tmp.write('{a: 1}')
+        tmp.close
+        expect(JSON.repair_file(Pathname.new(tmp.path))).to eq('{"a":1}')
       end
     end
   end

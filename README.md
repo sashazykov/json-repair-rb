@@ -53,6 +53,20 @@ If you need the parsed Ruby value instead of a string, pass `return_objects: tru
 
 `skip_json_loads: true` skips the stdlib `JSON.parse` attempt and routes the input straight through the repairer. The output is the same; the option is purely a performance knob for callers who know their input will need repair.
 
+### Reading from a file or IO
+
+`JSON.repair_file(path)` reads a file from disk and repairs its contents. `JSON.repair_io(io)` does the same with any object that responds to `#read` (e.g. `File`, `StringIO`, `$stdin`). Both forward `return_objects:` and `skip_json_loads:` to `JSON.repair`.
+
+```ruby
+JSON.repair_file('broken.json')
+JSON.repair_file('broken.json', return_objects: true)
+
+File.open('broken.json') { |io| JSON.repair_io(io) }
+JSON.repair_io($stdin)
+```
+
+`repair_io` does not close the IO — the caller manages its lifecycle.
+
 ## Command line
 
 The gem ships a `json-repair` executable. It reads from stdin or a file and writes to stdout, `--output FILE`, or back over the input file with `--overwrite`.

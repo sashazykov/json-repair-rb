@@ -15,9 +15,21 @@ module JSON
     VERSION: ::String
   end
 
+  interface _Readable
+    def read: () -> ::String
+  end
+
   def self.repair: (::String json, return_objects: false, ?skip_json_loads: bool) -> ::String
                  | (::String json, return_objects: true, ?skip_json_loads: bool) -> json_value
                  | (::String json, ?skip_json_loads: bool) -> ::String
+
+  def self.repair_io: (_Readable io, return_objects: false, ?skip_json_loads: bool) -> ::String
+                    | (_Readable io, return_objects: true, ?skip_json_loads: bool) -> json_value
+                    | (_Readable io, ?skip_json_loads: bool) -> ::String
+
+  def self.repair_file: (::String | ::Pathname path, return_objects: false, ?skip_json_loads: bool) -> ::String
+                      | (::String | ::Pathname path, return_objects: true, ?skip_json_loads: bool) -> json_value
+                      | (::String | ::Pathname path, ?skip_json_loads: bool) -> ::String
 
   private
 
