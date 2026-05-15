@@ -60,13 +60,14 @@ module JSON
 
       # Functions to check character chars
       def hex?(char)
-        (char >= ZERO && char <= NINE) ||
-          (char >= UPPERCASE_A && char <= UPPERCASE_F) ||
-          (char >= LOWERCASE_A && char <= LOWERCASE_F)
+        !char.nil? &&
+          ((char >= ZERO && char <= NINE) ||
+           (char >= UPPERCASE_A && char <= UPPERCASE_F) ||
+           (char >= LOWERCASE_A && char <= LOWERCASE_F))
       end
 
       def digit?(char)
-        char && char >= ZERO && char <= NINE
+        !char.nil? && char >= ZERO && char <= NINE
       end
 
       def valid_string_character?(char)
@@ -74,11 +75,11 @@ module JSON
       end
 
       def delimiter?(char)
-        REGEX_DELIMITER.match?(char)
+        !char.nil? && REGEX_DELIMITER.match?(char)
       end
 
       def unquoted_string_delimiter?(char)
-        REGEX_UNQUOTED_STRING_DELIMITER.match?(char)
+        !char.nil? && REGEX_UNQUOTED_STRING_DELIMITER.match?(char)
       end
 
       REGEX_FUNCTION_NAME_CHAR_START = /\A[a-zA-Z_$]\z/
@@ -93,19 +94,19 @@ module JSON
       end
 
       def start_of_value?(char)
-        REGEX_START_OF_VALUE.match?(char) || (char && quote?(char))
+        !char.nil? && (REGEX_START_OF_VALUE.match?(char) || quote?(char))
       end
 
       def control_character?(char)
-        [NEWLINE, RETURN, TAB, BACKSPACE, FORM_FEED].include?(char)
+        !char.nil? && [NEWLINE, RETURN, TAB, BACKSPACE, FORM_FEED].include?(char)
       end
 
       def whitespace?(char)
-        [SPACE, NEWLINE, TAB, RETURN].include?(char)
+        !char.nil? && [SPACE, NEWLINE, TAB, RETURN].include?(char)
       end
 
       def whitespace_except_newline?(char)
-        [SPACE, TAB, RETURN].include?(char)
+        !char.nil? && [SPACE, TAB, RETURN].include?(char)
       end
 
       def special_whitespace?(char)
@@ -135,11 +136,11 @@ module JSON
       end
 
       def double_quote_like?(char)
-        [DOUBLE_QUOTE, DOUBLE_QUOTE_LEFT, DOUBLE_QUOTE_RIGHT].include?(char)
+        !char.nil? && [DOUBLE_QUOTE, DOUBLE_QUOTE_LEFT, DOUBLE_QUOTE_RIGHT].include?(char)
       end
 
       def single_quote_like?(char)
-        [QUOTE, QUOTE_LEFT, QUOTE_RIGHT, GRAVE_ACCENT, ACUTE_ACCENT].include?(char)
+        !char.nil? && [QUOTE, QUOTE_LEFT, QUOTE_RIGHT, GRAVE_ACCENT, ACUTE_ACCENT].include?(char)
       end
 
       # Strip last occurrence of text_to_strip from text
@@ -147,8 +148,8 @@ module JSON
         index = text.rindex(text_to_strip)
         return text unless index
 
-        remaining_text = strip_remaining_text ? '' : text[index + 1..]
-        text[0...index] + remaining_text
+        remaining_text = strip_remaining_text ? '' : (text[index + 1..] || '')
+        (text[0...index] || '') + remaining_text
       end
 
       def insert_before_last_whitespace(text, text_to_insert)
@@ -158,7 +159,7 @@ module JSON
 
         index -= 1 while whitespace?(text[index - 1])
 
-        text[0...index] + text_to_insert + text[index..]
+        (text[0...index] || '') + text_to_insert + (text[index..] || '')
       end
 
       # Parse keywords true, false, null
@@ -187,7 +188,7 @@ module JSON
       end
 
       def remove_at_index(text, start, count)
-        text[0...start] + text[start + count..]
+        (text[0...start] || '') + (text[start + count..] || '')
       end
 
       def ends_with_comma_or_newline?(text)

@@ -1,4 +1,10 @@
 module JSON
+  # Recursive type for any `JSON.parse` result. Mirrors what stdlib's
+  # `JSON.parse` produces (and the JS upstream emits): scalars, arrays,
+  # and objects of the same. Used in place of `untyped` for the
+  # `return_objects: true` and internal `*_parse` paths.
+  type json_value = ::Hash[::String, json_value] | ::Array[json_value] | ::String | ::Integer | ::Float | bool | nil
+
   class JSONRepairError < StandardError
     attr_reader position: ::Integer?
 
@@ -10,12 +16,12 @@ module JSON
   end
 
   def self.repair: (::String json, return_objects: false, ?skip_json_loads: bool) -> ::String
-                 | (::String json, return_objects: true, ?skip_json_loads: bool) -> untyped
+                 | (::String json, return_objects: true, ?skip_json_loads: bool) -> json_value
                  | (::String json, ?skip_json_loads: bool) -> ::String
 
   private
 
-  def self.tolerant_parse: (::String json) -> untyped
+  def self.tolerant_parse: (::String json) -> json_value
 
-  def self.repaired_parse: (::String json) -> untyped
+  def self.repaired_parse: (::String json) -> json_value
 end

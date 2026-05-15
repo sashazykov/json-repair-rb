@@ -11,7 +11,7 @@ module JSON
     # `lib/json/repairer.rb`).
     @json: untyped
 
-    @index: Integer
+    @index: ::Integer
 
     @output: ::String
 
@@ -31,25 +31,25 @@ module JSON
 
     private
 
-    def parse_value: () -> untyped
+    def parse_value: () -> bool
 
-    def parse_whitespace: (?skip_newline: bool) -> (true | false)
+    def parse_whitespace: (?skip_newline: bool) -> bool
 
-    def parse_comment: () -> (true | false)
+    def parse_comment: () -> bool
 
     # Find and skip over a Markdown fenced code block
-    def parse_markdown_code_block: (::Array[::String] blocks) -> (true | false)
+    def parse_markdown_code_block: (::Array[::String] blocks) -> bool
 
-    def skip_markdown_code_block: (::Array[::String] blocks) -> (true | false)
+    def skip_markdown_code_block: (::Array[::String] blocks) -> bool
 
     # Parse an object like '{"key": "value"}'
-    def parse_object: () -> (false | true)
+    def parse_object: () -> bool
 
-    def skip_character: (untyped char) -> (true | false)
+    def skip_character: (::String char) -> bool
 
     # Skip ellipsis like "[1,2,3,...]" or "[1,2,3,...,9]" or "[...,7,8,9]"
     # or a similar construct in objects.
-    def skip_ellipsis: () -> untyped
+    def skip_ellipsis: () -> void
 
     # Parse a string enclosed by double quotes "...". Can contain escaped quotes
     # Repair strings enclosed in single quotes or special quotes
@@ -62,51 +62,55 @@ module JSON
     #   more conservative way, stopping the string at the first next delimiter
     #   and fixing the string by inserting a quote there, or stopping at a
     #   stop index detected in the first iteration.
-    def parse_string: (?stop_at_delimiter: bool, ?stop_at_index: ::Integer) -> (untyped | true | false)
+    def parse_string: (?stop_at_delimiter: bool, ?stop_at_index: ::Integer) -> bool
 
     # Repair an unquoted string by adding quotes around it
     # Repair a MongoDB function call like NumberLong("2")
     # Repair a JSONP function call like callback({...});
-    def parse_unquoted_string: (bool is_key) -> (false | true)
+    def parse_unquoted_string: (bool is_key) -> bool
 
     # Parse a regular expression literal like /foo/ or /foo\/bar/
-    def parse_regex: () -> (false | true)
+    def parse_regex: () -> bool
 
-    def parse_character: (untyped char) -> (true | false)
+    def parse_character: (::String char) -> bool
 
-    def parse_whitespace_and_skip_comments: (?skip_newline: bool) -> untyped
+    def parse_whitespace_and_skip_comments: (?skip_newline: bool) -> bool
 
     # Parse a number like 2.4 or 2.4e6
-    def parse_number: () -> (true | false)
+    def parse_number: () -> bool
 
-    def at_end_of_number?: () -> untyped
+    def at_end_of_number?: () -> bool
 
     # Parse an array like '["item1", "item2", ...]'
-    def parse_array: () -> (true | false)
+    def parse_array: () -> bool
 
-    def prev_non_whitespace_index: (untyped start) -> untyped
+    def prev_non_whitespace_index: (::Integer start) -> ::Integer
 
     # Repair concatenated strings like "hello" + "world", change this into "helloworld"
-    def parse_concatenated_string: () -> untyped
+    def parse_concatenated_string: () -> bool
 
-    def repair_number_ending_with_numeric_symbol: (untyped start) -> untyped
+    def repair_number_ending_with_numeric_symbol: (::Integer start) -> void
 
     # Parse and repair Newline Delimited JSON (NDJSON):
     # multiple JSON objects separated by a newline character
-    def parse_newline_delimited_json: () -> untyped
+    def parse_newline_delimited_json: () -> void
 
-    def skip_escape_character: () -> untyped
+    def skip_escape_character: () -> bool
 
-    def throw_invalid_character: (untyped char) -> untyped
+    # `bot` (bottom) because these always raise — steep needs this to
+    # treat their call sites as unreachable so methods like `repair`
+    # type-check (the trailing `throw_unexpected_character` must not
+    # contribute `void` to the method's union return type).
+    def throw_invalid_character: (::String char) -> bot
 
-    def throw_unexpected_character: () -> untyped
+    def throw_unexpected_character: () -> bot
 
-    def throw_unexpected_end: () -> untyped
+    def throw_unexpected_end: () -> bot
 
-    def throw_object_key_expected: () -> untyped
+    def throw_object_key_expected: () -> bot
 
-    def throw_colon_expected: () -> untyped
+    def throw_colon_expected: () -> bot
 
-    def throw_invalid_unicode_character: () -> untyped
+    def throw_invalid_unicode_character: () -> bot
   end
 end

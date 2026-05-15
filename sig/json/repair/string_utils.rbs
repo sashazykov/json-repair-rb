@@ -1,9 +1,9 @@
 module JSON
   module Repair
     module StringUtils
-      @output: untyped
+      @output: ::String
 
-      @index: untyped
+      @index: ::Integer
 
       # Constants for character chars
       BACKSLASH: "\\"
@@ -24,17 +24,17 @@ module JSON
 
       CLOSE_PARENTHESIS: ")"
 
-      SPACE: " "
+      SPACE: ::String
 
-      NEWLINE: "\n"
+      NEWLINE: ::String
 
-      TAB: "\t"
+      TAB: ::String
 
-      RETURN: "\r"
+      RETURN: ::String
 
-      BACKSPACE: "\b"
+      BACKSPACE: ::String
 
-      FORM_FEED: "\f"
+      FORM_FEED: ::String
 
       DOUBLE_QUOTE: "\""
 
@@ -110,56 +110,60 @@ module JSON
 
       REGEX_FUNCTION_NAME_CHAR: ::Regexp
 
-      # Functions to check character chars
-      def hex?: (untyped char) -> untyped
+      # Functions to check character chars.
+      # `char` is `::String?` because every caller passes `@json[@index]`,
+      # which is `nil` past the end of input. The predicates either guard
+      # against `nil` explicitly or rely on `Array#include?` / `==` /
+      # `Regexp#match?` returning a safe value for `nil`.
+      def hex?: (::String? char) -> bool
 
-      def digit?: (untyped char) -> untyped
+      def digit?: (::String? char) -> bool
 
-      def valid_string_character?: (untyped char) -> untyped
+      def valid_string_character?: (::String char) -> bool
 
-      def delimiter?: (untyped char) -> untyped
+      def delimiter?: (::String? char) -> bool
 
-      def unquoted_string_delimiter?: (untyped char) -> untyped
+      def unquoted_string_delimiter?: (::String? char) -> bool
 
-      def function_name_char_start?: (untyped char) -> untyped
+      def function_name_char_start?: (::String? char) -> bool
 
-      def function_name_char?: (untyped char) -> untyped
+      def function_name_char?: (::String? char) -> bool
 
-      def start_of_value?: (untyped char) -> untyped
+      def start_of_value?: (::String? char) -> bool
 
-      def control_character?: (untyped char) -> untyped
+      def control_character?: (::String? char) -> bool
 
-      def whitespace?: (untyped char) -> untyped
+      def whitespace?: (::String? char) -> bool
 
-      def whitespace_except_newline?: (untyped char) -> untyped
+      def whitespace_except_newline?: (::String? char) -> bool
 
-      def special_whitespace?: (untyped char) -> untyped
+      def special_whitespace?: (::String? char) -> bool
 
-      def quote?: (untyped char) -> untyped
+      def quote?: (::String? char) -> bool
 
-      def double_quote?: (untyped char) -> untyped
+      def double_quote?: (::String? char) -> bool
 
-      def single_quote?: (untyped char) -> untyped
+      def single_quote?: (::String? char) -> bool
 
-      def double_quote_like?: (untyped char) -> untyped
+      def double_quote_like?: (::String? char) -> bool
 
-      def single_quote_like?: (untyped char) -> untyped
+      def single_quote_like?: (::String? char) -> bool
 
       # Strip last occurrence of text_to_strip from text
-      def strip_last_occurrence: (untyped text, untyped text_to_strip, ?strip_remaining_text: bool) -> untyped
+      def strip_last_occurrence: (::String text, ::String text_to_strip, ?strip_remaining_text: bool) -> ::String
 
-      def insert_before_last_whitespace: (untyped text, untyped text_to_insert) -> untyped
+      def insert_before_last_whitespace: (::String text, ::String text_to_insert) -> ::String
 
       # Parse keywords true, false, null
       # Repair Python keywords True, False, None
       # Repair Ruby keyword nil
-      def parse_keywords: () -> untyped
+      def parse_keywords: () -> bool
 
-      def parse_keyword: (untyped name, untyped value) -> (true | false)
+      def parse_keyword: (::String name, ::String value) -> bool
 
-      def remove_at_index: (untyped text, untyped start, untyped count) -> untyped
+      def remove_at_index: (::String text, ::Integer start, ::Integer count) -> ::String
 
-      def ends_with_comma_or_newline?: (untyped text) -> untyped
+      def ends_with_comma_or_newline?: (::String text) -> bool
     end
   end
 end
