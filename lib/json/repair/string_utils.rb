@@ -143,7 +143,12 @@ module JSON
         !char.nil? && [QUOTE, QUOTE_LEFT, QUOTE_RIGHT, GRAVE_ACCENT, ACUTE_ACCENT].include?(char)
       end
 
-      # Strip last occurrence of text_to_strip from text
+      # Strip last occurrence of text_to_strip from text.
+      #
+      # `|| ''` on the slices below (and in `insert_before_last_whitespace` /
+      # `remove_at_index`) is for steep's nil-narrowing: `String#[range]` is
+      # typed `String?`, but every call site here keeps indices within
+      # `0..text.length`, so the slices never actually return `nil`.
       def strip_last_occurrence(text, text_to_strip, strip_remaining_text: false)
         index = text.rindex(text_to_strip)
         return text unless index

@@ -19,6 +19,9 @@ task :steep do
   sh 'bundle exec steep check'
 end
 
+desc 'Type-check: rbs validate + steep check'
+task typecheck: %i[rbs steep]
+
 desc 'Run benchmark/run.rb (regression baseline for JSON.repair)'
 task :bench do
   ruby '-Ilib', 'benchmark/run.rb'
