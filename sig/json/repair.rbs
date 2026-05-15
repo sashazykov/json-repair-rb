@@ -16,7 +16,7 @@ module JSON
   end
 
   interface _Readable
-    def read: () -> ::String
+    def read: () -> ::String?
   end
 
   def self.repair: (::String json, return_objects: false, ?skip_json_loads: bool) -> ::String

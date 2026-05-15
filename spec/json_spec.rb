@@ -923,6 +923,11 @@ RSpec.describe JSON do
         raise_error(JSON::JSONRepairError)
     end
 
+    it 'treats a nil-returning #read the same as empty input' do
+      io = Class.new { def read; end }.new
+      expect { JSON.repair_io(io) }.to raise_error(JSON::JSONRepairError)
+    end
+
     it 'does not close the IO' do
       io = StringIO.new('{"a": 1}')
       JSON.repair_io(io)
