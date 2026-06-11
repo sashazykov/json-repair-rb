@@ -38,7 +38,7 @@ module JSON
       parse_markdown_code_block(MARKDOWN_OPEN_BLOCKS)
 
       # repair: skip a Markdown list marker before the root value
-      skip_markdown_list_bullet
+      skip_markdown_list_marker
 
       processed = parse_value
 
@@ -210,7 +210,7 @@ module JSON
 
     # Repair a value behind a Markdown list marker, like "- {"a":1}",
     # by skipping the marker. See markdown_list_marker_length.
-    def skip_markdown_list_bullet
+    def skip_markdown_list_marker
       length = markdown_list_marker_length
       return false unless length
 
@@ -795,7 +795,7 @@ module JSON
 
         # repair: skip a Markdown list marker before the next value
         parse_whitespace_and_skip_comments
-        skip_markdown_list_bullet
+        skip_markdown_list_marker
 
         processed_value = parse_value
       end

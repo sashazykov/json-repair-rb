@@ -47,7 +47,7 @@ module JSON
     # is no marker.
     def markdown_list_marker_length: () -> ::Integer?
 
-    def skip_markdown_list_bullet: () -> bool
+    def skip_markdown_list_marker: () -> bool
 
     # Parse an object like '{"key": "value"}'
     def parse_object: () -> bool
