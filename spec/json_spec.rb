@@ -700,8 +700,14 @@ RSpec.describe JSON do
         expect(JSON.repair('- true')).to eq('true')
         expect(JSON.repair('- -5')).to eq('-5')
         expect(JSON.repair('- item one')).to eq('"item one"')
+        expect(JSON.repair('- .5')).to eq('0.5')
         # NBSP after the marker counts as same-line whitespace
         expect(JSON.repair("-\u00A0{\"a\": 1}")).to eq('{"a":1}')
+      end
+
+      it 'repairs a Markdown list marker after a leading comment' do
+        expect(JSON.repair("/* c */\n- {\"a\": 1}")).to eq('{"a":1}')
+        expect(JSON.repair("// note\n- 1\n- 2")).to eq('[1,2]')
       end
 
       it 'repairs a value behind an asterisk or plus Markdown list marker' do
@@ -743,6 +749,7 @@ RSpec.describe JSON do
         expect(JSON.repair("- {\"a\": 1},\n- {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
         expect(JSON.repair("1) {\"a\": 1}\n2) {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
         expect(JSON.repair("+ 1\n+ 2")).to eq('[1,2]')
+        expect(JSON.repair("- .5\n- .25")).to eq('[0.5,0.25]')
       end
 
       it 'repairs newline delimited JSON with Markdown list markers on some lines' do

@@ -38,6 +38,9 @@ module JSON
       parse_markdown_code_block(MARKDOWN_OPEN_BLOCKS)
 
       # repair: skip a Markdown list marker before the root value
+      # (and any comments before it, which parse_value would otherwise
+      # only consume after the marker check has already failed)
+      parse_whitespace_and_skip_comments
       skip_markdown_list_marker
 
       processed = parse_value
@@ -203,7 +206,9 @@ module JSON
       return nil unless same_line_whitespace?(@json[j])
 
       j += 1 while same_line_whitespace?(@json[j])
-      return nil unless start_of_value?(@json[j])
+      # a leading-dot number like ".5" is also a value here: parse_number
+      # repairs it to "0.5" even though start_of_value? does not match it
+      return nil unless start_of_value?(@json[j]) || @json[j] == DOT
 
       marker_length
     end
