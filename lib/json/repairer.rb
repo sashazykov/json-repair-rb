@@ -570,7 +570,9 @@ module JSON
           repair_number_ending_with_numeric_symbol(start)
           return true
         end
-        unless digit?(@json[@index])
+        # also accept a dot so "-.5" continues into the fraction branch
+        # below (divergence from upstream, which leaves "-.5" unrepaired)
+        unless digit?(@json[@index]) || @json[@index] == DOT
           @index = start
           return false
         end
@@ -620,7 +622,7 @@ module JSON
         num = @json[start...@index]
         has_invalid_leading_zero = num.match?(/^0\d/)
 
-        @output << (has_invalid_leading_zero ? "\"#{num}\"" : num)
+        @output << (has_invalid_leading_zero ? "\"#{num}\"" : repair_leading_dot_number(num))
         return true
       end
 
@@ -711,7 +713,14 @@ module JSON
       # repair numbers cut off at the end
       # this will only be called when we end after a '.', '-', or 'e' and does not
       # change the number more than it needs to make it valid JSON
-      @output << "#{@json[start...@index]}0"
+      @output << repair_leading_dot_number("#{@json[start...@index]}0")
+    end
+
+    # Repair a number missing its digit before the decimal point, like ".5"
+    # or "-.5", into "0.5" / "-0.5". Divergence from upstream, which emits
+    # the invalid leading-dot number unchanged.
+    def repair_leading_dot_number(num)
+      num.sub(/\A(?<sign>-?)\./, '\k<sign>0.')
     end
 
     # Parse and repair Newline Delimited JSON (NDJSON):

@@ -674,6 +674,23 @@ RSpec.describe JSON do
         expect(JSON.repair('[0789]')).to eq('["0789"]')
         expect(JSON.repair('{value:0789}')).to eq('{"value":"0789"}')
       end
+
+      it 'repairs a number starting with a dot' do
+        expect(JSON.repair('.5')).to eq('0.5')
+        expect(JSON.repair('-.5')).to eq('-0.5')
+        expect(JSON.repair('[.5, .25]')).to eq('[0.5,0.25]')
+        expect(JSON.repair('{"a": .5}')).to eq('{"a":0.5}')
+        expect(JSON.repair('.5e2')).to eq('50.0')
+      end
+
+      it 'repairs a number cut off after a leading dot' do
+        expect(JSON.repair('.')).to eq('0.0')
+        expect(JSON.repair('[-., 1]')).to eq('[-0.0,1]')
+      end
+
+      it 'repairs an object with an unquoted key and unclosed array value' do
+        expect(JSON.repair('{foo: [}')).to eq('{"foo":[]}')
+      end
     end
 
     context 'when the JSON cannot be repaired' do
@@ -777,6 +794,20 @@ RSpec.describe JSON do
           expect(err.position).to eq(5)
           expect(err.message).to eq('JSON::JSONRepairError')
         end
+      end
+    end
+
+    context 'when the repairer emits output stdlib cannot parse' do
+      # No known input triggers this today; the stub stands in for a future
+      # repairer bug so the JSONRepairError-only error contract holds even
+      # if one slips in.
+      it 'wraps the stdlib parser error in JSONRepairError' do
+        repairer = instance_double(JSON::Repairer, repair: '{"a":')
+        allow(JSON::Repairer).to receive(:new).and_return(repairer)
+
+        expect { JSON.repair('{"a":') }.to raise_error(
+          JSON::JSONRepairError, /repaired output is not valid JSON/
+        )
       end
     end
 

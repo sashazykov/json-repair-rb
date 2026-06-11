@@ -91,6 +91,10 @@ module JSON
 
     def repair_number_ending_with_numeric_symbol: (::Integer start) -> void
 
+    # Repair a number missing its digit before the decimal point, like ".5"
+    # or "-.5", into "0.5" / "-0.5".
+    def repair_leading_dot_number: (::String num) -> ::String
+
     # Parse and repair Newline Delimited JSON (NDJSON):
     # multiple JSON objects separated by a newline character
     def parse_newline_delimited_json: () -> void

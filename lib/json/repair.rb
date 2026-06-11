@@ -43,8 +43,14 @@ module JSON
   end
   private_class_method :tolerant_parse
 
+  # The rescue guards the JSONRepairError-only error contract: if the
+  # Repairer ever emits a string stdlib JSON cannot parse (a Repairer bug),
+  # wrap the stdlib error instead of leaking JSON::ParserError to callers.
   def self.repaired_parse(json)
-    JSON.parse(Repairer.new(json).repair)
+    repaired = Repairer.new(json).repair
+    JSON.parse(repaired)
+  rescue JSON::ParserError => e
+    raise JSONRepairError, "Internal error: repaired output is not valid JSON (#{e.message})"
   end
   private_class_method :repaired_parse
 end

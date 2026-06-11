@@ -1,5 +1,21 @@
 # Changes
 
+### 2026-06-11 (0.9.0)
+
+* Repair numbers missing the digit before their decimal point:
+  `.5` → `0.5`, `-.5` → `-0.5`, and truncated forms like `.` → `0.0`.
+  Previously these leaked a raw stdlib `JSON::ParserError` out of
+  `JSON.repair` because the repairer emitted the leading-dot number
+  unchanged (invalid JSON) and the canonical-output re-parse choked on
+  it. This is a deliberate divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (which leaves
+  leading-dot numbers unrepaired as of v3.14.0), matching
+  [dirty-json](https://github.com/RyanMarcus/dirty-json) behavior.
+* `JSON.repair` now guards its error contract: if the repairer ever
+  emits a string stdlib JSON cannot parse (a repairer bug), the stdlib
+  error is wrapped in `JSON::JSONRepairError` instead of leaking
+  `JSON::ParserError` to callers.
+
 ### 2026-05-15 (0.8.0)
 
 * `JSON.repair_file(path)` and `JSON.repair_io(io)` convenience
