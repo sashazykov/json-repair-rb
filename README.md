@@ -31,6 +31,12 @@ puts repaired_json  # Outputs: {"name":"Alice","age":25}
 
 The `repair` method takes a string containing JSON data and returns a corrected version of this string, ensuring it is valid JSON.
 
+Markdown markup in LLM output is handled too: fenced code blocks like `` ```json `` are stripped, and list markers (`-`, `*`, `+`, `1.`) in front of top-level values are removed — a multi-line list becomes an array:
+
+```ruby
+JSON.repair("- {\"a\": 1}\n- {\"b\": 2}")  # => '[{"a":1},{"b":2}]'
+```
+
 Pass `return_objects: true` to get the parsed Ruby value (Hash, Array, or scalar) instead of a string:
 
 ```ruby
@@ -52,18 +58,6 @@ JSON.repair('{"a":1,"a":2}')     # => '{"a":2}'
 If you need the parsed Ruby value instead of a string, pass `return_objects: true` (covered above).
 
 `skip_json_loads: true` skips the stdlib `JSON.parse` attempt and routes the input straight through the repairer. The output is the same; the option is purely a performance knob for callers who know their input will need repair.
-
-### Markdown list markers
-
-LLMs often emit JSON values as items of a Markdown list. Top-level list markers (`-`, `*`, `+`, and ordered markers like `1.` or `2)`) are stripped, and a multi-line list becomes an array:
-
-```ruby
-JSON.repair('- {"a": 1}')                  # => '{"a":1}'
-JSON.repair("- {\"a\": 1}\n- {\"b\": 2}")  # => '[{"a":1},{"b":2}]'
-JSON.repair("1. first\n2. second")         # => '["first","second"]'
-```
-
-A marker only counts when it's followed by whitespace and a value on the same line, so negative numbers like `-5` are unaffected.
 
 ### Reading from a file or IO
 
