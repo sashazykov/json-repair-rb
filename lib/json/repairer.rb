@@ -718,8 +718,12 @@ module JSON
 
     # Repair a number missing its digit before the decimal point, like ".5"
     # or "-.5", into "0.5" / "-0.5". Divergence from upstream, which emits
-    # the invalid leading-dot number unchanged.
+    # the invalid leading-dot number unchanged. The guard keeps the common
+    # case (a number that needs no repair) allocation-free; `sub` copies
+    # its receiver even when the pattern does not match.
     def repair_leading_dot_number(num)
+      return num unless num.start_with?('.', '-.')
+
       num.sub(/\A(?<sign>-?)\./, '\k<sign>0.')
     end
 
