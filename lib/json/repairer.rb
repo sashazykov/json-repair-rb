@@ -49,7 +49,8 @@ module JSON
       processed_comma = parse_character(COMMA)
       parse_whitespace_and_skip_comments if processed_comma
 
-      if start_of_value?(@json[@index]) && ends_with_comma_or_newline?(@output)
+      if (start_of_value?(@json[@index]) || markdown_list_marker_length) &&
+         ends_with_comma_or_newline?(@output)
         # start of a new value after end of the root level object: looks like
         # newline delimited JSON -> turn into a root level array
         unless processed_comma
@@ -791,6 +792,10 @@ module JSON
             @output = insert_before_last_whitespace(@output, ',')
           end
         end
+
+        # repair: skip a Markdown list marker before the next value
+        parse_whitespace_and_skip_comments
+        skip_markdown_list_bullet
 
         processed_value = parse_value
       end

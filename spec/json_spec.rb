@@ -733,6 +733,28 @@ RSpec.describe JSON do
         expect { JSON.repair('1234567890. 5') }.to raise_error(JSON::JSONRepairError)
         expect { JSON.repair('- - 5') }.to raise_error(JSON::JSONRepairError)
       end
+
+      it 'repairs a multi-line Markdown list into an array' do
+        expect(JSON.repair("- {\"a\": 1}\n- {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("* {\"a\": 1}\n* {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("1. {\"a\": 1}\n2. {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("- item one\n- item two")).to eq('["item one","item two"]')
+        expect(JSON.repair("1. first\n2. second")).to eq('["first","second"]')
+        expect(JSON.repair("- {\"a\": 1},\n- {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("1) {\"a\": 1}\n2) {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("+ 1\n+ 2")).to eq('[1,2]')
+      end
+
+      it 'repairs newline delimited JSON with Markdown list markers on some lines' do
+        expect(JSON.repair("{\"a\": 1}\n* {\"b\": 2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("3\n- 5\n7")).to eq('[3,5,7]')
+        expect(JSON.repair("1\n- 2,\n- 3")).to eq('[1,2,3]')
+      end
+
+      it 'keeps newline delimited decimals and concatenated strings intact' do
+        expect(JSON.repair("1.5\n2.5")).to eq('[1.5,2.5]')
+        expect(JSON.repair("\"a\"\n+ \"b\"")).to eq('"ab"')
+      end
     end
 
     context 'when the JSON cannot be repaired' do
