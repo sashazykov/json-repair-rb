@@ -1,5 +1,27 @@
 # Changes
 
+### 2026-06-11 (0.10.0)
+
+* Repair Markdown list markers in front of top-level values:
+  `- {"a": 1}` → `{"a":1}`, and multi-line lists become arrays via the
+  existing newline-delimited JSON handling
+  (`"- {\"a\": 1}\n- {\"b\": 2}"` → `[{"a":1},{"b":2}]`). Bullet
+  markers `-`, `*`, `+` and ordered markers like `1.` / `2)` (up to
+  nine digits, the CommonMark limit) are recognized at the start of
+  the root value and of each newline-delimited line, only when
+  followed by same-line whitespace and a value — so `-5`, a trailing
+  `"- "`, and newline-delimited decimals like `"1.5\n2.5"` keep their
+  number readings, and nothing changes inside nested structures.
+  Previously these inputs raised `JSONRepairError`; two non-raising
+  behaviors change for the better: `"3\n- 5\n7"` now repairs to
+  `[3,5,7]` instead of the corrupt `[3,0,5,7]`, and a single-line
+  `* text` becomes `"text"` instead of `"* text"`. Deliberate
+  divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (no Markdown
+  list handling as of v3.14.0), and more precise than Python
+  [`json_repair`](https://github.com/mangiucugna/json_repair), which
+  collapses scalar list items to `""`.
+
 ### 2026-06-11 (0.9.0)
 
 * Repair numbers missing the digit before their decimal point:

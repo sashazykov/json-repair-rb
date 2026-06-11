@@ -53,6 +53,18 @@ If you need the parsed Ruby value instead of a string, pass `return_objects: tru
 
 `skip_json_loads: true` skips the stdlib `JSON.parse` attempt and routes the input straight through the repairer. The output is the same; the option is purely a performance knob for callers who know their input will need repair.
 
+### Markdown list markers
+
+LLMs often emit JSON values as items of a Markdown list. Top-level list markers (`-`, `*`, `+`, and ordered markers like `1.` or `2)`) are stripped, and a multi-line list becomes an array:
+
+```ruby
+JSON.repair('- {"a": 1}')                  # => '{"a":1}'
+JSON.repair("- {\"a\": 1}\n- {\"b\": 2}")  # => '[{"a":1},{"b":2}]'
+JSON.repair("1. first\n2. second")         # => '["first","second"]'
+```
+
+A marker only counts when it's followed by whitespace and a value on the same line, so negative numbers like `-5` are unaffected.
+
 ### Reading from a file or IO
 
 `JSON.repair_file(path)` reads a file from disk and repairs its contents. `JSON.repair_io(io)` does the same with any object that responds to `#read` (e.g. `File`, `StringIO`, `$stdin`). Both forward `return_objects:` and `skip_json_loads:` to `JSON.repair`.
