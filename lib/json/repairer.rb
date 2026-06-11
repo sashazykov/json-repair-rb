@@ -37,6 +37,9 @@ module JSON
     def repair
       parse_markdown_code_block(MARKDOWN_OPEN_BLOCKS)
 
+      # repair: skip a Markdown list marker before the root value
+      skip_markdown_list_bullet
+
       processed = parse_value
 
       throw_unexpected_end unless processed
@@ -168,6 +171,50 @@ module JSON
       end
 
       false
+    end
+
+    # Look ahead from @index for a Markdown list marker like "- ", "* ",
+    # "+ ", or "12. " that precedes a value. Returns the marker's length,
+    # or nil when there is no marker. Only consulted at the top level —
+    # the root value and each newline-delimited value — never inside
+    # nested structures. A marker must be followed by same-line
+    # whitespace and a value, so "-5", a trailing "- ", and "-\n{...}"
+    # keep their number readings. Ordered markers are capped at nine
+    # digits (the CommonMark limit) so long truncated decimals are not
+    # mistaken for markers. Divergence from upstream (no Markdown list
+    # handling as of v3.14.0): LLMs frequently emit JSON values as
+    # Markdown list items.
+    def markdown_list_marker_length
+      j = @index
+
+      if [MINUS, ASTERISK, PLUS].include?(@json[j])
+        j += 1
+      elsif digit?(@json[j])
+        j += 1 while digit?(@json[j]) && j - @index < 9
+        return nil unless [DOT, CLOSE_PARENTHESIS].include?(@json[j])
+
+        j += 1
+      else
+        return nil
+      end
+
+      marker_length = j - @index
+      return nil unless same_line_whitespace?(@json[j])
+
+      j += 1 while same_line_whitespace?(@json[j])
+      return nil unless start_of_value?(@json[j])
+
+      marker_length
+    end
+
+    # Repair a value behind a Markdown list marker, like "- {"a":1}",
+    # by skipping the marker. See markdown_list_marker_length.
+    def skip_markdown_list_bullet
+      length = markdown_list_marker_length
+      return false unless length
+
+      @index += length
+      true
     end
 
     # Parse an object like '{"key": "value"}'

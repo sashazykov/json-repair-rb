@@ -42,6 +42,13 @@ module JSON
 
     def skip_markdown_code_block: (::Array[::String] blocks) -> bool
 
+    # Look ahead for a Markdown list marker like "- " or "12. " that
+    # precedes a value; returns the marker's length, or nil when there
+    # is no marker.
+    def markdown_list_marker_length: () -> ::Integer?
+
+    def skip_markdown_list_bullet: () -> bool
+
     # Parse an object like '{"key": "value"}'
     def parse_object: () -> bool
 

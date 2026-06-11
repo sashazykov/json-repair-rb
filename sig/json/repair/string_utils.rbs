@@ -139,6 +139,8 @@ module JSON
 
       def special_whitespace?: (::String? char) -> bool
 
+      def same_line_whitespace?: (::String? char) -> bool
+
       def quote?: (::String? char) -> bool
 
       def double_quote?: (::String? char) -> bool

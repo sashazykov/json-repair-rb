@@ -123,6 +123,10 @@ module JSON
           (char >= EN_QUAD && char <= ZERO_WIDTH_SPACE)
       end
 
+      def same_line_whitespace?(char)
+        whitespace_except_newline?(char) || special_whitespace?(char)
+      end
+
       def quote?(char)
         double_quote_like?(char) || single_quote_like?(char)
       end
