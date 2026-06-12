@@ -767,7 +767,9 @@ module JSON
       if @index > start
         # repair a number with leading zeros like "00789"
         num = @json[start...@index]
-        has_invalid_leading_zero = num.match?(/^0\d/)
+        # the optional sign quotes "-05" like "05" (divergence from
+        # upstream, whose unsigned check lets "-05" through unrepaired)
+        has_invalid_leading_zero = num.match?(/^-?0\d/)
 
         @output << (has_invalid_leading_zero ? "\"#{num}\"" : repair_leading_dot_number(num))
         return true
@@ -865,7 +867,11 @@ module JSON
       # repair numbers cut off at the end
       # this will only be called when we end after a '.', '-', or 'e' and does not
       # change the number more than it needs to make it valid JSON
-      @output << repair_leading_dot_number("#{@json[start...@index]}0")
+      num = "#{@json[start...@index]}0"
+      # quote a padded token that has an invalid leading zero, like "05e" ->
+      # "05e0", applying the same rule as the end of parse_number (divergence
+      # from upstream, which emits the invalid number raw)
+      @output << (num.match?(/^-?0\d/) ? "\"#{num}\"" : repair_leading_dot_number(num))
     end
 
     # Repair a number missing its digit before the decimal point, like ".5"
