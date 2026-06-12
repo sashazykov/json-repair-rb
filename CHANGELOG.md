@@ -1,5 +1,36 @@
 # Changes
 
+### 2026-06-12 (0.12.0)
+
+* Repair the three known input families that raised `Internal error:
+  repaired output is not valid JSON` — cases where upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (v3.14.0, still
+  its latest release) emits invalid JSON and this gem's canonical
+  re-serialize guard caught it but blamed the Repairer. All three are
+  deliberate divergences from upstream, commented at each site:
+  * A stray `e`/`E` with no mantissa is now an unquoted string instead
+    of an empty-mantissa exponent: `[e]` → `["e"]`, `[e5]` → `["e5"]`,
+    `[truee]` → `[true,"e"]`, `{"k": e}` → `{"k":"e"}` (upstream emits
+    `e0` / raw `e5`). Numbers truncated at a real exponent (`[2e]` →
+    `[2.0]`) are unchanged.
+  * Negative leading-zero numbers are quoted like positive ones:
+    `{"n": -05}` → `{"n":"-05"}`, matching the existing `{"n": 05}` →
+    `{"n":"05"}` (upstream emits `-05` unrepaired). The same rule now
+    also covers the truncated-number repair, which bypassed it:
+    `[05e]` → `["05e0"]`, `00.` → `"00.0"` (upstream emits `05e0` /
+    `00.0` unrepaired). Valid `-0` / `-0.5` / `0e` / `0.` are
+    unchanged.
+  * The trailing-comma repair no longer strips a comma belonging to the
+    enclosing container when an inner object/array fails on its first
+    key or value: `[{{]` → `[{},{}]`, `[1,[}]` → `[1,[]]`,
+    `{"a": 1, "b": [}` → `{"a":1,"b":[]}` (upstream emits `[{}{}]`,
+    `[1[]]`, `{"a": 1 "b": []}`).
+  Validated by differential testing against upstream over a 270-input
+  grid of these shapes in every container context: the only behavior
+  changes vs 0.11.3 are the 123 previously-`Internal error` inputs now
+  repairing (or, for `e+` shapes where upstream emits invalid `e+0`,
+  raising a clean position-bearing error). Benchmarks flat.
+
 ### 2026-06-12 (0.11.3)
 
 * Fix infinite recursion (`SystemStackError`) on a quoted string

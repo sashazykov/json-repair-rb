@@ -256,7 +256,7 @@ module JSON
           if @json[@index] == CLOSING_BRACE || @json[@index] == OPENING_BRACE ||
              @json[@index] == CLOSING_BRACKET || @json[@index] == OPENING_BRACKET ||
              @json[@index].nil?
-            # repair trailing comma — but only one this object's own loop
+            # repair trailing comma — but only the one this object's own loop
             # emitted or inserted; on the first pair the buffer's last
             # comma belongs to the enclosing container, like in [{{] or
             # {"a": 1, "b": {] (divergence from upstream, which strips
@@ -813,7 +813,7 @@ module JSON
           processed_value = parse_value
           next if processed_value
 
-          # repair trailing comma — but only one this array's own loop
+          # repair trailing comma — but only the one this array's own loop
           # emitted or inserted; on the first item the buffer's last
           # comma belongs to the enclosing container, like in [1,[}] or
           # {"a": 1, "b": [} (divergence from upstream, which strips
