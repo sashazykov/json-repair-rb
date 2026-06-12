@@ -127,6 +127,10 @@ module JSON
         whitespace_except_newline?(char) || special_whitespace?(char)
       end
 
+      def whitespace_or_special?(char)
+        whitespace?(char) || special_whitespace?(char)
+      end
+
       def quote?(char)
         double_quote_like?(char) || single_quote_like?(char)
       end

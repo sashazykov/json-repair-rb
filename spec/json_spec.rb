@@ -762,6 +762,40 @@ RSpec.describe JSON do
         expect(JSON.repair("1.5\n2.5")).to eq('[1.5,2.5]')
         expect(JSON.repair("\"a\"\n+ \"b\"")).to eq('"ab"')
       end
+
+      it 'repairs an object string value with unescaped quotes around a colon' do
+        expect(JSON.repair('{"a": "b": "c"}')).to eq('{"a":"b\": \"c"}')
+        expect(JSON.repair('{"a": "b":"c"}')).to eq('{"a":"b\":\"c"}')
+        expect(JSON.repair('{"a": "b": "c", "d": "e"}')).to eq('{"a":"b\": \"c","d":"e"}')
+        expect(JSON.repair('{"a": "b" : "c"}')).to eq('{"a":"b\" : \"c"}')
+        expect(JSON.repair(%q({"a": 'b': 'c'}))).to eq(%q({"a":"b': 'c"}))
+        expect(JSON.repair('[{"a": "b": "c"}]')).to eq('[{"a":"b\": \"c"}]')
+        expect(JSON.repair('{"a": "b": "c"}', return_objects: true)).to eq({ 'a' => 'b": "c' })
+        expect(JSON.repair('{"a": b": "c"}')).to eq('{"a":"b\": \"c"}')
+      end
+
+      it 'repairs repeated doubled colons greedily' do
+        expect(JSON.repair('{"a": "b": "c": "d"}')).to eq('{"a":"b\": \"c\": \"d"}')
+        expect(JSON.repair('{"a": "b": "c, x": "d"}')).to eq('{"a":"b\": \"c, x\": \"d"}')
+      end
+
+      it 'repairs a doubled colon in truncated or comma-less objects' do
+        expect(JSON.repair('{"a": "b": "c"')).to eq('{"a":"b\": \"c"}')
+        expect(JSON.repair('{"a": "b": "c" "d": "e"}')).to eq('{"a":"b\": \"c","d":"e"}')
+      end
+
+      it 'preserves the literal span when merging a doubled colon' do
+        expect(JSON.repair(%({"a": "b"\n: "c"}))).to eq('{"a":"b\"\n: \"c"}')
+        expect(JSON.repair('{"a": "b\"": "c"}')).to eq('{"a":"b\"\": \"c"}')
+        expect(JSON.repair('{"a": "b\"": "c"}', return_objects: true)).to eq({ 'a' => 'b"": "c' })
+        expect(JSON.repair('{"a": “b”: “c”}')).to eq('{"a":"b”: “c"}')
+      end
+
+      it 'repairs a doubled colon across special whitespace' do
+        expect(JSON.repair("{\"a\": \"b\"\u00A0: \"c\"}")).to eq("{\"a\":\"b\\\"\u00A0: \\\"c\"}")
+        expect(JSON.repair("{\"a\": \"b\":\u00A0\"c\"}")).to eq("{\"a\":\"b\\\":\u00A0\\\"c\"}")
+        expect(JSON.repair('{"a": "b":　"c"}')).to eq('{"a":"b\":　\"c"}')
+      end
     end
 
     context 'when the JSON cannot be repaired' do
@@ -818,6 +852,63 @@ RSpec.describe JSON do
       specify do
         expect { JSON.repair("\"abc\u001F\"") }.to \
           raise_error(JSON::JSONRepairError, /\AInvalid character "\\u001f" at index 4\z/i)
+      end
+
+      # Guard branches in repair_doubled_colon: colon found, but the char
+      # before it is not a quote (non-string value), or the char after the
+      # colon is not a quote (non-string after colon).
+      specify do
+        expect { JSON.repair('{"a": 1: "c"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 7')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": "b":1}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 9')
+      end
+
+      # doubled-colon guards: only the string-colon-string shape is
+      # repaired (see repair_doubled_colon); these must keep raising
+      specify do
+        expect { JSON.repair('{"a": "b": 1}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 9')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": "b": true}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 9')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": 1: 2}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 7')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": {"x":"y"}: "c"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 15')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": "b":}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 9')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": "b" /* note */ : "c"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 21')
+      end
+
+      specify do
+        expect { JSON.repair('{"a": b: "c"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Colon expected at index 12')
+      end
+
+      specify do
+        # greedy merge engages, then bails at the non-string tail; the
+        # raise discards all partial output
+        expect { JSON.repair('{"x": "a": "b": 5}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 14')
       end
 
       describe '#position on the raised error' do

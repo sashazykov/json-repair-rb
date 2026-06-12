@@ -52,6 +52,10 @@ module JSON
     # Parse an object like '{"key": "value"}'
     def parse_object: () -> bool
 
+    # Repair an object value with unescaped quotes around a colon,
+    # like {"a": "b": "c"}, by merging it into one string value.
+    def repair_doubled_colon: () -> void
+
     def skip_character: (::String char) -> bool
 
     # Skip ellipsis like "[1,2,3,...]" or "[1,2,3,...,9]" or "[...,7,8,9]"

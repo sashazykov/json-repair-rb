@@ -294,6 +294,10 @@ module JSON
           end
           # :nocov:
         end
+
+        # repair: an object string value with unescaped quotes around a
+        # colon, like {"a": "b": "c"}
+        repair_doubled_colon if processed_value
       end
 
       if @json[@index] == CLOSING_BRACE
@@ -305,6 +309,59 @@ module JSON
       end
 
       true
+    end
+
+    # Repair an object value with unescaped quotes around a colon, like
+    # {"a": "b": "c"}, by merging it all into one string value: 'b": "c'
+    # (the unescaped-quotes reading of the input). Greedy: keeps merging
+    # while another `: "..."` follows. Only the string-colon-string
+    # shape is repaired; anything else falls through to the regular
+    # error paths. Divergence from upstream (which raises "Object key
+    # expected" as of v3.14.0), matching the Go and Python json-repair
+    # libraries on the canonical case.
+    def repair_doubled_colon
+      loop do
+        colon = @index
+        # :nocov: kept for symmetry with the start_quote scan below; unreachable
+        # because @index never rests on whitespace here. On first entry,
+        # parse_value ends with parse_whitespace_and_skip_comments. On greedy
+        # re-entry, every parse_string exit leaves @index off-whitespace: the
+        # EOF path (nil is not whitespace), the stop_at_index path (a
+        # prev_non_whitespace_index position), and the end-quote path (ends in
+        # parse_concatenated_string, whose leading whitespace skip consumes
+        # newlines too). If a future parse_value/parse_string change breaks
+        # that, this scan becomes live and the :nocov: will hide it.
+        colon += 1 while whitespace_or_special?(@json[colon])
+        # :nocov:
+        return unless @json[colon] == COLON
+
+        # scan past special whitespace too (unlike prev_non_whitespace_index):
+        # parse_whitespace treats NBSP and friends as whitespace, so this
+        # repair should as well. The value's last character (at worst the
+        # object's opening brace) always stops the scan before index 0.
+        end_quote = colon - 1
+        end_quote -= 1 while whitespace_or_special?(@json[end_quote])
+        return unless quote?(@json[end_quote])
+
+        start_quote = colon + 1
+        start_quote += 1 while whitespace_or_special?(@json[start_quote])
+        return unless quote?(@json[start_quote])
+
+        # repair: replace the end quote already emitted (plus any copied
+        # trailing whitespace) with the literal input span from that end
+        # quote through the next start quote, escaped as string content
+        @output = strip_last_occurrence(@output, '"', strip_remaining_text: true)
+        @json[end_quote..start_quote].each_char do |char|
+          @output << (char == DOUBLE_QUOTE ? '\"' : CONTROL_CHARACTERS.fetch(char, char))
+        end
+
+        # let parse_string consume the rest of the merged string, then
+        # drop the start quote it emits (already emitted escaped above)
+        @index = start_quote
+        start = @output.length
+        parse_string
+        @output = remove_at_index(@output, start, 1)
+      end
     end
 
     def skip_character(char)
