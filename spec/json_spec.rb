@@ -419,6 +419,22 @@ RSpec.describe JSON do
         expect(JSON.repair("{\"a\": 1}\n# trailing")).to eq('{"a":1}')
         expect(JSON.repair("{\"a\":1}\n{\"b\":2} # note")).to eq('[{"a":1},{"b":2}]')
         expect(JSON.repair("\"a\" + # note\n \"b\"")).to eq('"ab"')
+        expect(JSON.repair("{\"a\":1}\n# note\n{\"b\":2}")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("{\"a\": 1 # c\r\n, \"b\": 2}")).to eq('{"a":1,"b":2}')
+        expect(JSON.repair('{"a": 1 #')).to eq('{"a":1}')
+        expect(JSON.repair('"a" + #note')).to eq('"a"')
+      end
+
+      it 'treats whitespace-bearing # tokens at value positions as comments' do
+        # the flip side of the lookahead: once whitespace follows the #
+        # before any structural delimiter, the token reads as comment
+        # prose, even where a value is expected — a conscious tradeoff
+        # (Python's json_repair drops these too), pinned so a future
+        # change can't flip it silently
+        expect(JSON.repair('{"a": #b c}')).to eq('{"a":null}')
+        expect(JSON.repair("{\"a\": #tag\n}")).to eq('{"a":null}')
+        expect { JSON.repair("# note\n") }.to \
+          raise_error(JSON::JSONRepairError, 'Unexpected end of json string at index 7')
       end
 
       it 'does not remove comments inside a string' do
