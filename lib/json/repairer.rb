@@ -237,6 +237,7 @@ module JSON
 
       initial = true
       while @index < @json.length && @json[@index] != CLOSING_BRACE
+        first_pair = initial
         if initial
           initial = false
         else
@@ -255,8 +256,12 @@ module JSON
           if @json[@index] == CLOSING_BRACE || @json[@index] == OPENING_BRACE ||
              @json[@index] == CLOSING_BRACKET || @json[@index] == OPENING_BRACKET ||
              @json[@index].nil?
-            # repair trailing comma
-            @output = strip_last_occurrence(@output, ',')
+            # repair trailing comma — but only one this object's own loop
+            # emitted or inserted; on the first pair the buffer's last
+            # comma belongs to the enclosing container, like in [{{] or
+            # {"a": 1, "b": {] (divergence from upstream, which strips
+            # the parent's comma and emits invalid JSON like [{}{}])
+            @output = strip_last_occurrence(@output, ',') unless first_pair
           else
             throw_object_key_expected
           end
@@ -794,6 +799,7 @@ module JSON
 
         initial = true
         while @index < @json.length && @json[@index] != CLOSING_BRACKET
+          first_item = initial
           if initial
             initial = false
           else
@@ -807,8 +813,12 @@ module JSON
           processed_value = parse_value
           next if processed_value
 
-          # repair trailing comma
-          @output = strip_last_occurrence(@output, ',')
+          # repair trailing comma — but only one this array's own loop
+          # emitted or inserted; on the first item the buffer's last
+          # comma belongs to the enclosing container, like in [1,[}] or
+          # {"a": 1, "b": [} (divergence from upstream, which strips
+          # the parent's comma and emits invalid JSON like [1[]])
+          @output = strip_last_occurrence(@output, ',') unless first_item
           break
         end
 

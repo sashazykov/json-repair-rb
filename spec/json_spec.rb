@@ -747,6 +747,23 @@ RSpec.describe JSON do
         expect(JSON.repair('{foo: [}')).to eq('{"foo":[]}')
       end
 
+      it 'repairs a truncated nested container without dropping the enclosing comma' do
+        expect(JSON.repair('[{{]')).to eq('[{},{}]')
+        expect(JSON.repair('["x",{{]')).to eq('["x",{},{}]')
+        expect(JSON.repair('[{"a":1,{]')).to eq('[{"a":1},{}]')
+        expect(JSON.repair('[1,[}]')).to eq('[1,[]]')
+        expect(JSON.repair('[1,[}')).to eq('[1,[]]')
+        expect(JSON.repair('{"a": 1, "b": [}')).to eq('{"a":1,"b":[]}')
+        expect(JSON.repair('{"a": 1, "b": {]')).to eq('{"a":1,"b":{}}')
+        # doubled braces at the root still raise (no enclosing comma to lose)
+        expect { JSON.repair('{{') }.to \
+          raise_error(JSON::JSONRepairError, 'Unexpected character "{" at index 1')
+        expect { JSON.repair('{{}}') }.to \
+          raise_error(JSON::JSONRepairError, 'Unexpected character "{" at index 1')
+        expect { JSON.repair('{"a":{{') }.to \
+          raise_error(JSON::JSONRepairError, 'Unexpected character "{" at index 6')
+      end
+
       it 'repairs a value behind a Markdown list marker' do
         expect(JSON.repair('- { "k": 1 }')).to eq('{"k":1}')
         expect(JSON.repair('- [1, 2]')).to eq('[1,2]')
