@@ -15,6 +15,8 @@ module JSON
 
     @output: ::String
 
+    @repaired_unescaped_quote: bool
+
     include Repair::StringUtils
 
     CONTROL_CHARACTERS: ::Hash[::String, "\\b" | "\\f" | "\\n" | "\\r" | "\\t"]

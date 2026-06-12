@@ -1,5 +1,15 @@
+# Merge our Exclude lists with RuboCop's defaults (vendor/**/*, tmp/**/*, …)
+# instead of replacing them — CI vendors gems into vendor/bundle, which
+# RuboCop must keep skipping.
+inherit_mode:
+  merge:
+    - Exclude
+
 AllCops:
   TargetRubyVersion: 3.0
+  Exclude:
+    # gitignored local planning notes and scratch tooling (see CLAUDE.md)
+    - docs/**/*
 
 Style/Documentation:
   Enabled: false

@@ -32,6 +32,7 @@ module JSON
       @json = json
       @index = 0
       @output = +''
+      @repaired_unescaped_quote = false
     end
 
     def repair
@@ -295,8 +296,14 @@ module JSON
         end
 
         # repair: an object string value with unescaped quotes around a
-        # colon, like {"a": "b": "c"}
-        repair_doubled_colon if processed_value
+        # colon, like {"a": "b": "c"}. Skipped when this pair already
+        # needed a repair that makes the merge compound garbage: a
+        # missing colon (the "key" was a stray junk word, like
+        # {"v1": true, COMMENT "v2": "data"}) or a value glued together
+        # by the unescaped-quote repair (like
+        # {"k": "v" COMMENT "k2": "v2"}); both keep raising, matching
+        # upstream
+        repair_doubled_colon if processed_value && processed_colon && !@repaired_unescaped_quote
       end
 
       if @json[@index] == CLOSING_BRACE
@@ -315,9 +322,13 @@ module JSON
     # (the unescaped-quotes reading of the input). Greedy: keeps merging
     # while another `: "..."` follows. Only the string-colon-string
     # shape is repaired; anything else falls through to the regular
-    # error paths. Divergence from upstream (which raises "Object key
-    # expected" as of v3.14.0), matching the Go and Python json-repair
-    # libraries on the canonical case.
+    # error paths. The call site additionally requires the pair's colon
+    # to be present in the input and the value string to have parsed
+    # without the unescaped-quote repair (@repaired_unescaped_quote) —
+    # when either repair already fired, the pair was malformed in a way
+    # this merge would compound, not fix. Divergence from upstream
+    # (which raises "Object key expected" as of v3.14.0), matching the
+    # Go and Python json-repair libraries on the canonical case.
     def repair_doubled_colon
       loop do
         colon = @index
@@ -399,6 +410,9 @@ module JSON
     #   and fixing the string by inserting a quote there, or stopping at a
     #   stop index detected in the first iteration.
     def parse_string(stop_at_delimiter: false, stop_at_index: -1)
+      # fresh parse (the backtracking re-invocations below rebuild the
+      # string from scratch, so they reset too); see repair_doubled_colon
+      @repaired_unescaped_quote = false
       skip_escape_chars = @json[@index] == BACKSLASH
       if skip_escape_chars
         # repair: remove the first escape character
@@ -508,6 +522,7 @@ module JSON
 
           # repair unescaped quote
           str = "#{str[...o_quote]}\\#{str[o_quote..]}"
+          @repaired_unescaped_quote = true
         elsif stop_at_delimiter && unquoted_string_delimiter?(@json[@index])
           # we're in the mode to stop the string at the first delimiter
           # because there is an end quote missing
@@ -807,7 +822,12 @@ module JSON
         # repair: remove the end quote of the first string
         @output = strip_last_occurrence(@output, '"', strip_remaining_text: true)
         start = @output.length
+        # the segments form one logical string value: keep the doubled-colon
+        # guard's flag set when an earlier segment needed the unescaped-quote
+        # repair (parse_string resets it on entry)
+        repaired_earlier_segment = @repaired_unescaped_quote
         parsed_str = parse_string
+        @repaired_unescaped_quote ||= repaired_earlier_segment
         @output = if parsed_str
                     # repair: remove the start quote of the second string
                     remove_at_index(@output, start, 1)

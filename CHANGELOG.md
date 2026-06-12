@@ -1,6 +1,26 @@
 # Changes
 
-### 2026-06-12 (0.11.1)
+### 2026-06-12 (0.11.2)
+
+* Fix the 0.11.0 doubled-colon repair silently mangling objects with a
+  stray junk word between pairs. `{"value_1": true, COMMENT "value_2":
+  "data"}` returned `{"value_1":true,"COMMENT":"value_2\": \"data"}`
+  (the junk word became a key and swallowed the real pair), and
+  `{ "key": "value" COMMENT "key2": "value2" }` returned a single
+  glued string value. Both shapes now raise "Object key expected"
+  again at the same positions as upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) v3.14.0,
+  restoring the pre-0.11.0 behavior: the merge is skipped when the
+  pair already needed a missing-colon repair or the value string was
+  itself salvaged by the unescaped-quote repair — signals that the
+  pair was malformed in a way the merge would compound, not fix. The
+  salvage signal survives string concatenation: in
+  `{"a": "b" x "c" + "d": "e"}` the `+ "d"` segment no longer clears
+  it (caught in review by Copilot). All
+  0.11.0 repairs (canonical, greedy, escaped quotes, unquoted
+  keys/values) are unchanged. Go and Python `json_repair` instead
+  drop the junk word; we deliberately keep raising rather than
+  silently discarding input (see the 0.11.0 note).
 
 * Fix a `TypeError` crash on input ending in a lone backslash inside a
   string: `"abc\` now repairs to `"abc"` (likewise `"\` → `""`,

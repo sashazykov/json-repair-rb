@@ -906,6 +906,30 @@ RSpec.describe JSON do
           raise_error(JSON::JSONRepairError, 'Object key expected at index 21')
       end
 
+      # doubled-colon guard: when the value string was itself salvaged by the
+      # unescaped-quote repair (a stray word between two quoted strings glued
+      # the spans together), merging across the following colon would compound
+      # the damage into silent garbage — keep raising like upstream
+      specify do
+        expect { JSON.repair('{ "key": "value" COMMENT "key2": "value2" }') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 31')
+      end
+
+      # the guard survives string concatenation: the salvaged first segment
+      # keeps the flag set even though `+ "..."` segments re-enter parse_string
+      specify do
+        expect { JSON.repair('{"a": "b" x "c" + "d": "e"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 21')
+      end
+
+      # stray junk word between object pairs: Go/Python json-repair silently
+      # drop the word; upstream JS raises — we keep parity (see CHANGELOG.md,
+      # 0.11.2)
+      specify do
+        expect { JSON.repair('{"value_1": true, COMMENT "value_2": "data"}') }.to \
+          raise_error(JSON::JSONRepairError, 'Object key expected at index 35')
+      end
+
       specify do
         expect { JSON.repair('{"a": b: "c"}') }.to \
           raise_error(JSON::JSONRepairError, 'Colon expected at index 12')
