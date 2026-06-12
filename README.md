@@ -37,6 +37,12 @@ Markdown markup in LLM output is handled too: fenced code blocks like `` ```json
 JSON.repair("- {\"a\": 1}\n- {\"b\": 2}")  # => '[{"a":1},{"b":2}]'
 ```
 
+Object values containing unescaped quotes around a colon are merged back into a single string value:
+
+```ruby
+JSON.repair('{"a": "b": "c"}')  # => '{"a":"b\": \"c"}' — the value reads as 'b": "c'
+```
+
 Pass `return_objects: true` to get the parsed Ruby value (Hash, Array, or scalar) instead of a string:
 
 ```ruby

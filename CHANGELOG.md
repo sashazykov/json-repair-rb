@@ -1,5 +1,25 @@
 # Changes
 
+### 2026-06-12 (0.11.0)
+
+* Repair object string values with unescaped quotes around a colon
+  ("doubled colon"): `{"a": "b": "c"}` → `{"a":"b\": \"c"}` — the
+  value reads as `b": "c`, the unescaped-quotes interpretation. The
+  merge preserves the literal characters between the strings
+  (whitespace, original quote style) and repeats greedily
+  (`{"a": "b": "c": "d"}` → value `b": "c": "d`). Only the
+  string–colon–string shape is repaired: non-string shapes like
+  `{"a": "b": 1}` or `{"a": 1: 2}` still raise `JSONRepairError`
+  rather than silently dropping data (Python `json_repair` drops the
+  `: 1` there). Previously all of these raised "Object key expected".
+  Deliberate divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (raises as of
+  v3.14.0), matching
+  [Go json-repair](https://github.com/RealAlexandreAI/json-repair)
+  and Python
+  [`json_repair`](https://github.com/mangiucugna/json_repair) on the
+  canonical case.
+
 ### 2026-06-11 (0.10.0)
 
 * Repair Markdown list markers in front of top-level values:
