@@ -37,7 +37,9 @@ module JSON
 
     def parse_whitespace: (?skip_newline: bool) -> bool
 
-    def parse_comment: () -> bool
+    def parse_comment: (?value_expected: bool) -> bool
+
+    def hash_comment?: (bool value_expected) -> bool
 
     # Find and skip over a Markdown fenced code block
     def parse_markdown_code_block: (::Array[::String] blocks) -> bool
@@ -87,7 +89,7 @@ module JSON
 
     def parse_character: (::String char) -> bool
 
-    def parse_whitespace_and_skip_comments: (?skip_newline: bool) -> bool
+    def parse_whitespace_and_skip_comments: (?skip_newline: bool, ?value_expected: bool) -> bool
 
     # Parse a number like 2.4 or 2.4e6
     def parse_number: () -> bool
