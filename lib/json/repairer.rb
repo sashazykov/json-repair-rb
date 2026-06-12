@@ -71,7 +71,7 @@ module JSON
       # repair redundant end quotes
       while [CLOSING_BRACE, CLOSING_BRACKET].include?(@json[@index])
         @index += 1
-        parse_whitespace_and_skip_comments
+        parse_whitespace_and_skip_comments(value_expected: false)
       end
 
       if @index >= @json.length
@@ -93,17 +93,17 @@ module JSON
                 parse_keywords ||
                 parse_unquoted_string(false) ||
                 parse_regex
-      parse_whitespace_and_skip_comments
+      parse_whitespace_and_skip_comments(value_expected: false)
 
       process
     end
 
-    def parse_whitespace_and_skip_comments(skip_newline: true)
+    def parse_whitespace_and_skip_comments(skip_newline: true, value_expected: true)
       start = @index
 
       changed = parse_whitespace(skip_newline: skip_newline)
       loop do
-        changed = parse_comment
+        changed = parse_comment(value_expected: value_expected)
         changed = parse_whitespace(skip_newline: skip_newline) if changed
         break unless changed
       end
@@ -131,7 +131,7 @@ module JSON
       false
     end
 
-    def parse_comment
+    def parse_comment(value_expected: true)
       if @json[@index] == '/' && @json[@index + 1] == '*'
         # Block comment
         @index += 2
@@ -143,9 +143,40 @@ module JSON
         @index += 2
         @index += 1 until @json[@index].nil? || @json[@index] == "\n"
         true
+      elsif @json[@index] == '#' && hash_comment?(value_expected)
+        # Hash line comment, like in Python, YAML, or Hjson (divergence
+        # from upstream, which raises on `#` as of v3.14.0)
+        @index += 1
+        @index += 1 until @json[@index].nil? || @json[@index] == "\n"
+        true
       else
         false
       end
+    end
+
+    # Decide whether the `#` at @index starts a line comment or an
+    # unquoted value like {"color": #ff0000}, {#tag: 1}, or a root
+    # #hashtag (which Python's json_repair eats as comments, losing
+    # data). Where no value or key is expected an unquoted token would
+    # be junk anyway, so `#` is always a comment, exactly like `//`.
+    # Where one is expected, scan the rest of the line: a structural
+    # delimiter (`,` `}` `]` `:`) before any whitespace means the token
+    # reads as a value in context; whitespace (including the newline
+    # itself) first means comment prose; reaching EOF without a newline
+    # keeps the token a value, so truncated input like {"a": #tag is
+    # repaired, not dropped. Divergence from upstream, as above.
+    def hash_comment?(value_expected)
+      return true unless value_expected
+
+      i = @index + 1
+      while (char = @json[i])
+        return true if whitespace_or_special?(char)
+        return false if [COMMA, COLON, CLOSING_BRACE, CLOSING_BRACKET].include?(char)
+
+        i += 1
+      end
+
+      false
     end
 
     # Find and skip over a Markdown fenced code block:
@@ -268,7 +299,7 @@ module JSON
           break
         end
 
-        parse_whitespace_and_skip_comments
+        parse_whitespace_and_skip_comments(value_expected: false)
         processed_colon = parse_character(COLON)
         truncated_text = @index >= @json.length
         unless processed_colon
@@ -491,7 +522,7 @@ module JSON
           @index += 1
           @output << str
 
-          parse_whitespace_and_skip_comments(skip_newline: false)
+          parse_whitespace_and_skip_comments(skip_newline: false, value_expected: false)
 
           if stop_at_delimiter ||
              @index >= @json.length ||
@@ -846,11 +877,11 @@ module JSON
     def parse_concatenated_string
       processed = false
 
-      parse_whitespace_and_skip_comments
+      parse_whitespace_and_skip_comments(value_expected: false)
       while @json[@index] == PLUS
         processed = true
         @index += 1
-        parse_whitespace_and_skip_comments
+        parse_whitespace_and_skip_comments(value_expected: false)
 
         # repair: remove the end quote of the first string
         @output = strip_last_occurrence(@output, '"', strip_remaining_text: true)

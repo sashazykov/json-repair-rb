@@ -384,6 +384,43 @@ RSpec.describe JSON do
           eq('{"a":"foo","b":"bar"}')
       end
 
+      it 'keeps unquoted values starting with #' do
+        # the hash-comment lookahead (see hash_comment?) must leave these
+        # repairs untouched; Python's json_repair eats them as comments
+        # and loses the data
+        expect(JSON.repair('{"color": #ff0000}')).to eq('{"color":"#ff0000"}')
+        expect(JSON.repair('{"tag": #hashtag}')).to eq('{"tag":"#hashtag"}')
+        expect(JSON.repair('["#a", #b]')).to eq('["#a","#b"]')
+        expect(JSON.repair('["#a", #b, "c"]')).to eq('["#a","#b","c"]')
+        expect(JSON.repair('{#tag: 1}')).to eq('{"#tag":1}')
+        expect(JSON.repair('#standalone')).to eq('"#standalone"')
+        expect(JSON.repair('{"a": #tag')).to eq('{"a":"#tag"}')
+      end
+
+      it 'does not remove # inside a string' do
+        expect(JSON.repair('"# not a comment"')).to eq('"# not a comment"')
+        expect(JSON.repair('{"a": "x # y"')).to eq('{"a":"x # y"}')
+      end
+
+      it 'removes # line comments' do
+        # divergence from upstream, which raises on # as of v3.14.0;
+        # see the # branch in parse_comment
+        expect(JSON.repair("{\"a\": 1 # comment\n}")).to eq('{"a":1}')
+        expect(JSON.repair('{"a": 1 # comment}')).to eq('{"a":1}')
+        expect(JSON.repair('[1, 2 # comment]')).to eq('[1,2]')
+        expect(JSON.repair("[\"a\" # note\n, \"b\"]")).to eq('["a","b"]')
+        expect(JSON.repair("{ # note\n \"a\": 1}")).to eq('{"a":1}')
+        expect(JSON.repair("{ #TODO\n \"a\": 1}")).to eq('{"a":1}')
+        expect(JSON.repair("{\"a\": 1, # b\n \"c\": 2}")).to eq('{"a":1,"c":2}')
+        expect(JSON.repair("{\"a\": # note\n 1}")).to eq('{"a":1}')
+        expect(JSON.repair("{\"a\" # c\n: 1}")).to eq('{"a":1}')
+        expect(JSON.repair("# lead\n{\"a\": 1}")).to eq('{"a":1}')
+        expect(JSON.repair("{ # a\n # b\n \"x\": 1}")).to eq('{"x":1}')
+        expect(JSON.repair("{\"a\": 1}\n# trailing")).to eq('{"a":1}')
+        expect(JSON.repair("{\"a\":1}\n{\"b\":2} # note")).to eq('[{"a":1},{"b":2}]')
+        expect(JSON.repair("\"a\" + # note\n \"b\"")).to eq('"ab"')
+      end
+
       it 'does not remove comments inside a string' do
         expect(JSON.repair('"/* foo */"')).to eq('"/* foo */"')
       end
