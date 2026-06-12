@@ -200,6 +200,30 @@ RSpec.describe JSON do
         expect(JSON.repair('{"a": "b\\')).to eq('{"a":"b"}')
       end
 
+      it 'repairs every prefix of a reference document into parseable JSON' do
+        doc = <<~'JSON'
+          {
+            "id": 42,
+            "name": "héllo — ☃",
+            "esc": "quote:\" back:\\ nl:\n uni:\u2605",
+            "nums": [-0.25, 1.5e-3, 1000],
+            "nested": {
+              "arr": [1, [2, {"deep": true}]],
+              "ok": false,
+              "nil": null
+            }
+          }
+        JSON
+
+        expect(JSON.parse(JSON.repair(doc))).to eq(JSON.parse(doc))
+
+        (1..doc.length).each do |i|
+          prefix = doc[0, i]
+          expect { JSON.parse(JSON.repair(prefix)) }.not_to \
+            raise_error, "failed at prefix length #{i}: #{prefix.inspect}"
+        end
+      end
+
       it 'repairs a string followed by a backslash-escaped delimiter' do
         expect(JSON.repair('["y"\\, "z"]')).to eq('["y\\"","z"]')
         expect(JSON.repair('"y"\\, "z"')).to eq('["y\\"","z"]')
