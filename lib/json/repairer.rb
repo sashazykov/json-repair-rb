@@ -530,7 +530,9 @@ module JSON
           return true
         elsif @json[@index] == BACKSLASH
           # handle escaped content like \n or ★
-          char = @json[@index + 1]
+          # nil at EOF: '' mirrors JS charAt, making the invalid-escape
+          # repair below a no-op that ends the string
+          char = @json[@index + 1] || ''
           escape_char = ESCAPE_CHARACTERS[char]
           if escape_char
             str << @json[@index, 2]

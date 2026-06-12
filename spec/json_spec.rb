@@ -193,6 +193,13 @@ RSpec.describe JSON do
           eq("{\"message\":\"with, multiple, commma's, you see?\"}")
       end
 
+      it 'repairs a string truncated at a lone backslash' do
+        expect(JSON.repair('"abc\\')).to eq('"abc"')
+        expect(JSON.repair('"\\')).to eq('""')
+        expect(JSON.repair('["abc\\')).to eq('["abc"]')
+        expect(JSON.repair('{"a": "b\\')).to eq('{"a":"b"}')
+      end
+
       it 'repairs ellipsis in an array' do
         expect(JSON.repair('[1,2,3,...]')).to eq('[1,2,3]')
         expect(JSON.repair('[1, 2, 3, ... ]')).to eq('[1,2,3]')

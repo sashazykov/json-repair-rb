@@ -1,5 +1,17 @@
 # Changes
 
+### 2026-06-12 (0.11.1)
+
+* Fix a `TypeError` crash on input ending in a lone backslash inside a
+  string: `"abc\` now repairs to `"abc"` (likewise `"\` → `""`,
+  `["abc\` → `["abc"]`, `{"a": "b\` → `{"a":"b"}`), matching upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) v3.14.0. This
+  was a porting bug — JS `charAt` past EOF returns `''` where Ruby
+  `String#[]` returns `nil`, so the invalid-escape repair in
+  `parse_string` crashed on `str << nil` instead of ending the string,
+  violating the contract that `JSONRepairError` is the only error
+  raised. Found by differential fuzzing during the 0.11.0 review.
+
 ### 2026-06-12 (0.11.0)
 
 * Repair object string values with unescaped quotes around a colon
