@@ -4,7 +4,7 @@ This is a Ruby gem designed to repair broken JSON strings. Inspired by and based
 
 ## Installation
 
-Add this gem to your application's Gemfield by executing:
+Add this gem to your application's Gemfile by executing:
 
 ```bash
 $ bundle add json-repair
