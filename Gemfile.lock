@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    json-repair (0.11.2)
+    json-repair (0.11.3)
 
 GEM
   remote: https://rubygems.org/

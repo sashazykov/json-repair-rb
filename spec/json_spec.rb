@@ -200,6 +200,12 @@ RSpec.describe JSON do
         expect(JSON.repair('{"a": "b\\')).to eq('{"a":"b"}')
       end
 
+      it 'repairs a string followed by a backslash-escaped delimiter' do
+        expect(JSON.repair('["y"\\, "z"]')).to eq('["y\\"","z"]')
+        expect(JSON.repair('"y"\\, "z"')).to eq('["y\\"","z"]')
+        expect(JSON.repair('{"a": "y"\\, "b": "z"}')).to eq('{"a":"y\\"","b":"z"}')
+      end
+
       it 'repairs ellipsis in an array' do
         expect(JSON.repair('[1,2,3,...]')).to eq('[1,2,3]')
         expect(JSON.repair('[1, 2, 3, ... ]')).to eq('[1,2,3]')

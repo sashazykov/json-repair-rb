@@ -463,7 +463,13 @@ module JSON
           return true
         end
 
-        if @index == stop_at_index
+        # >= with a sentinel guard, not ==. Divergence from upstream (which
+        # compares with == as of v3.14.0): a multi-character advance below
+        # can step over the stop index, and resuming the comma-path retry
+        # from beyond it would re-fire that retry with identical arguments
+        # forever. The invalid-escape repair below avoids the only known
+        # overshoot; this is the backstop guaranteeing termination.
+        if stop_at_index >= 0 && @index >= stop_at_index
           # use the stop index detected in the first iteration, and repair end quote
           str = insert_before_last_whitespace(str, '"')
           @output << str
@@ -569,6 +575,15 @@ module JSON
             # repair a backslash escaped newline (like in Bash scripts)
             str << '\n'
             @index += 2
+          elsif @index + 1 == stop_at_index
+            # repair invalid escape character: remove it — but the escaped
+            # character is the delimiter the comma-path retry said to stop
+            # at, so drop only the backslash and let the stop check above
+            # fire there, keeping the delimiter a delimiter. Divergence
+            # from upstream, which consumes both characters, jumps the stop
+            # index, and crashes ("Maximum call stack size exceeded" on
+            # inputs like `["y"\, "z"]` as of v3.14.0).
+            @index += 1
           else
             # repair invalid escape character: remove it
             str << char

@@ -1,5 +1,28 @@
 # Changes
 
+### 2026-06-12 (0.11.3)
+
+* Fix infinite recursion (`SystemStackError`) on a quoted string
+  followed by a backslash-escaped delimiter, like `["y"\, "z"]`. The
+  missing-end-quote retry in `parse_string` stops at the comma it
+  detected in the first pass, but the invalid-escape repair consumed
+  `\,` as one two-character step, jumping over the stop index and
+  re-firing the retry with identical arguments forever — violating the
+  contract that `JSONRepairError` is the only error raised. The escaped
+  delimiter now ends the string there and the dangling backslash is
+  dropped (the standard invalid-escape repair): `["y"\, "z"]` →
+  `["y\"","z"]`. The stop-index check is also hardened from `==` to
+  `>=` so no future multi-character advance can step over it and
+  recurse. Deliberate divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair), which crashes
+  with "Maximum call stack size exceeded" on the same input as of
+  v3.14.0 (still its latest release). Found by differential fuzzing
+  during the 0.11.2 work and re-validated the same way: across a
+  240-input grid of escape-adjacent shapes, only previously-crashing
+  inputs changed behavior — object shapes like `{"k": "y"\, "z"}` now
+  raise the same "Colon expected" as their backslash-free analog
+  `{"k": "y", "z"}`. Benchmarks flat vs 0.11.2.
+
 ### 2026-06-12 (0.11.2)
 
 * Fix the 0.11.0 doubled-colon repair silently mangling objects with a
