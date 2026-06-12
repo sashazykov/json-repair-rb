@@ -701,6 +701,24 @@ RSpec.describe JSON do
         expect(JSON.repair('[-., 1]')).to eq('[-0.0,1]')
       end
 
+      it 'repairs a stray e or E into an unquoted string' do
+        expect(JSON.repair('[e]')).to eq('["e"]')
+        expect(JSON.repair('[E]')).to eq('["E"]')
+        expect(JSON.repair('[e5]')).to eq('["e5"]')
+        expect(JSON.repair('[E5]')).to eq('["E5"]')
+        expect(JSON.repair('e')).to eq('"e"')
+        expect(JSON.repair('[e, 1]')).to eq('["e",1]')
+        expect(JSON.repair('[e-]')).to eq('["e-"]')
+        expect(JSON.repair('{"k": e}')).to eq('{"k":"e"}')
+        expect(JSON.repair('[truee]')).to eq('[true,"e"]')
+        expect(JSON.repair('["z"e]')).to eq('["z","e"]')
+        # the concatenation path declines after the stray e, like [a+]
+        expect { JSON.repair('[e+]') }.to \
+          raise_error(JSON::JSONRepairError, 'Unexpected character "+" at index 2')
+        # a real mantissa + e + non-digit/non-end also falls through to unquoted string
+        expect(JSON.repair('[2ex]')).to eq('["2ex"]')
+      end
+
       it 'repairs an object with an unquoted key and unclosed array value' do
         expect(JSON.repair('{foo: [}')).to eq('{"foo":[]}')
       end

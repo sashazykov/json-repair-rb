@@ -738,7 +738,13 @@ module JSON
         @index += 1 while digit?(@json[@index])
       end
 
-      if @json[@index] && @json[@index].downcase == 'e'
+      # Divergence from upstream: only enter the exponent branch when a
+      # mantissa was consumed — at this point @index > start implies at
+      # least one digit (the '-' and '.' paths reset otherwise). Upstream
+      # accepts a bare "e"/"E" here and emits invalid JSON like `e0` or
+      # raw `e5`; declining lets the token fall through to
+      # parse_unquoted_string, matching how "-e5" already becomes "-e5".
+      if @index > start && @json[@index] && @json[@index].downcase == 'e'
         @index += 1
         @index += 1 if ['-', '+'].include?(@json[@index])
         if at_end_of_number?
