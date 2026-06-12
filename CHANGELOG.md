@@ -1,5 +1,27 @@
 # Changes
 
+### 2026-06-12 (0.13.0)
+
+* Repair `#` hash line comments, like in Python, YAML, or Hjson:
+  `{"a": 1 # comment\n}` → `{"a":1}`, `{ # note\n "a": 1}` →
+  `{"a":1}`, `# lead\n{"a": 1}` → `{"a":1}`. Divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (v3.14.0
+  raises on all of these), commented at the site. Recognition is
+  context-aware so unquoted values starting with `#` keep repairing
+  into strings — `{"color": #ff0000}` → `{"color":"#ff0000"}`,
+  `{#tag: 1}` → `{"#tag":1}`, `#standalone` → `"#standalone"` — where
+  Python's `json_repair` silently loses them (`{"color": ""}`).
+  Where a value or key is expected, a `#` token reaching a structural
+  delimiter (`,` `}` `]` `:`) before any whitespace, or running to
+  end-of-input without a newline, stays a value; anything else is a
+  comment stripped to the end of the line. The tradeoff: a `#` token
+  followed by whitespace or a newline at a value position now reads
+  as a comment — `{"a": #b c}` → `{"a":null}` and `{"a": #tag\n}` →
+  `{"a":null}`, where 0.12.0 kept them as strings (Python drops them
+  too), and a comment-only document now raises like `// only a
+  comment` always has. Pinned in the spec suite as conscious
+  decisions.
+
 ### 2026-06-12 (0.12.0)
 
 * Repair the three known input families that raised `Internal error:
