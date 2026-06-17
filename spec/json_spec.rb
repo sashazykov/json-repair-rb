@@ -802,6 +802,31 @@ RSpec.describe JSON do
         expect(JSON.repair('[-., 1]')).to eq('[-0.0,1]')
       end
 
+      it 'repairs a number with a leading plus' do
+        expect(JSON.repair('+1.23')).to eq('1.23')
+        expect(JSON.repair('+5')).to eq('5')
+        expect(JSON.repair('[+1]')).to eq('[1]')
+        expect(JSON.repair('[+1, +2]')).to eq('[1,2]')
+        expect(JSON.repair('{"a": +5}')).to eq('{"a":5}')
+        expect(JSON.repair('+.5')).to eq('0.5')
+        # the leading + is dropped, so a leading-zero number is quoted just
+        # like its plain "05" form
+        expect(JSON.repair('+05')).to eq('"05"')
+        # a + inside the exponent is part of the number and left untouched
+        expect(JSON.repair('2e+5')).to eq('200000.0')
+      end
+
+      it 'repairs a number cut off after a leading plus' do
+        expect(JSON.repair('+.')).to eq('0.0')
+        expect(JSON.repair('[+1.]')).to eq('[1.0]')
+      end
+
+      it 'raises on a bare plus that is not a number' do
+        expect { JSON.repair('+') }.to raise_error(JSON::JSONRepairError)
+        expect { JSON.repair('[+]') }.to raise_error(JSON::JSONRepairError)
+        expect { JSON.repair('+abc') }.to raise_error(JSON::JSONRepairError)
+      end
+
       it 'repairs a stray e or E into an unquoted string' do
         expect(JSON.repair('[e]')).to eq('["e"]')
         expect(JSON.repair('[E]')).to eq('["E"]')

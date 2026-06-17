@@ -741,6 +741,24 @@ module JSON
     # Parse a number like 2.4 or 2.4e6
     def parse_number
       start = @index
+
+      # Divergence from upstream: accept and discard a leading "+". JSON5
+      # permits an explicit plus; JSON does not, so "+1.23" -> "1.23" and
+      # "{"a": +5}" -> {"a":5}. The "+" must be followed by a digit or a
+      # leading dot (mirroring the "-" branch below); otherwise this is not
+      # a number and we backtrack to the "+" so a bare "+" still raises.
+      # `start` stays on the "+", so the reset paths restore @index cleanly
+      # and the @index > start exponent guard below still implies a digit
+      # was consumed; the two emission sites drop the leading "+" before
+      # quoting. Upstream leaves "+1.23" unrepaired.
+      if @json[@index] == PLUS
+        @index += 1
+        unless digit?(@json[@index]) || @json[@index] == DOT
+          @index = start
+          return false
+        end
+      end
+
       if @json[@index] == '-'
         @index += 1
         if at_end_of_number?
@@ -802,7 +820,9 @@ module JSON
 
       if @index > start
         # repair a number with leading zeros like "00789"
-        num = @json[start...@index]
+        # drop a leading "+" first (see the PLUS branch above), so "+05"
+        # quotes like "05" and "+1.23" emits as "1.23"
+        num = @json[start...@index].delete_prefix(PLUS)
         # the optional sign quotes "-05" like "05" (divergence from
         # upstream, whose unsigned check lets "-05" through unrepaired)
         has_invalid_leading_zero = num.match?(/^-?0\d/)
@@ -908,7 +928,8 @@ module JSON
       # repair numbers cut off at the end
       # this will only be called when we end after a '.', '-', or 'e' and does not
       # change the number more than it needs to make it valid JSON
-      num = "#{@json[start...@index]}0"
+      # delete_prefix drops a leading "+" (see the PLUS branch in parse_number)
+      num = "#{@json[start...@index]}0".delete_prefix(PLUS)
       # quote a padded token that has an invalid leading zero, like "05e" ->
       # "05e0", applying the same rule as the end of parse_number (divergence
       # from upstream, which emits the invalid number raw)

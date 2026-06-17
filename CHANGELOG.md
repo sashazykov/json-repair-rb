@@ -1,5 +1,20 @@
 # Changes
 
+### 2026-06-17 (0.14.0)
+
+* Repair a leading `+` on numbers, like in JSON5: `+1.23` → `1.23`,
+  `[+1]` → `[1]`, `{"a": +5}` → `{"a":5}`, `+.5` → `0.5`. The `+` is
+  consumed and dropped (JSON has no explicit plus), so a leading-zero
+  number is quoted exactly like its unsigned form (`+05` → `"05"`),
+  while a `+` inside an exponent is left untouched (`2e+5` →
+  `200000.0`). The `+` must be followed by a digit or a leading dot, so
+  a bare `+` (and `+abc`, `++1`, `+e5`) still raises — and requiring a
+  digit/dot keeps the 0.12.0 empty-mantissa exponent guard intact.
+  Divergence from upstream
+  [jsonrepair](https://github.com/josdejong/jsonrepair) (v3.14.0 leaves
+  `+1.23` unrepaired, raising "Unexpected end of json string"),
+  commented at the site. Mirrors the leading-dot number repair (0.9.0).
+
 ### 2026-06-12 (0.13.0)
 
 * Repair `#` hash line comments, like in Python, YAML, or Hjson:
