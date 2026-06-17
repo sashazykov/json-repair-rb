@@ -502,6 +502,11 @@ RSpec.describe JSON do
         expect(JSON.repair('[/* a */,/* b */1,2,3]')).to eq('[1,2,3]')
         expect(JSON.repair('[, 1,2,3]')).to eq('[1,2,3]')
         expect(JSON.repair('[ , 1,2,3]')).to eq('[1,2,3]')
+        # multiple leading commas are elided empty slots too, dropped the
+        # same way as interior ones (not mangled into a nested array)
+        expect(JSON.repair('[,,1]')).to eq('[1]')
+        expect(JSON.repair('[, ,1,2]')).to eq('[1,2]')
+        expect(JSON.repair('[,,]')).to eq('[]')
       end
 
       it 'drops elided empty slots in an array' do

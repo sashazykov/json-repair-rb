@@ -434,13 +434,15 @@ module JSON
       end
     end
 
-    # Repair elided empty array slots like [1,,2] or [1,,,,2]. Called right
-    # after a separator comma: skip every further comma (each marks a slot
-    # with no value between it and the previous one), so [1,,2] -> [1,2] and
-    # [1,,,,2] -> [1,2]. Dropping the slot — rather than inserting null —
-    # matches how a leading comma is dropped ([,1] -> [1]). Divergence from
-    # upstream, which mangles [1,,2] into [[1],2] via its root comma-sequence
-    # wrap and raises on [1,,,,2] (as of v3.14.0).
+    # Repair elided empty array slots like [1,,2] or [1,,,,2]. Called both
+    # at the start of an array (leading commas) and right after a separator
+    # comma: skip every comma found here (each marks a slot with no value
+    # between it and the previous one or the opening bracket), so [1,,2] ->
+    # [1,2], [1,,,,2] -> [1,2], and [,,1] -> [1]. Dropping the slot — rather
+    # than inserting null — extends the single-leading-comma repair ([,1] ->
+    # [1]) uniformly. Divergence from upstream, which mangles [1,,2] into
+    # [[1],2] via its root comma-sequence wrap and raises on [1,,,,2] (as of
+    # v3.14.0).
     def skip_elided_commas
       loop do
         parse_whitespace_and_skip_comments
@@ -861,8 +863,9 @@ module JSON
         @index += 1
         parse_whitespace_and_skip_comments
 
-        # repair: skip leading comma like in [,1,2,3]
-        parse_whitespace_and_skip_comments if skip_character(COMMA)
+        # repair: skip leading commas (elided empty slots) like [,1,2,3]
+        # or [,,1] — the same drop applied after a separator comma below
+        skip_elided_commas
 
         initial = true
         while @index < @json.length && @json[@index] != CLOSING_BRACKET

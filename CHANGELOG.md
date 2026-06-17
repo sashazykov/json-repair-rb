@@ -3,19 +3,20 @@
 ### 2026-06-17 (0.15.0)
 
 * Repair elided empty array slots: `[1,,2]` → `[1,2]`, `[1,,,,2]` →
-  `[1,2]`, `[1, ,2]` → `[1,2]`. After a separator comma, any further
-  commas mark empty slots with no value between them and are dropped —
-  matching how a leading comma is dropped (`[,1]` → `[1]`), and
-  consistent with `dirty-json`. Divergence from upstream
+  `[1,2]`, `[1, ,2]` → `[1,2]`, and `[,,1]` → `[1]`. A comma with no
+  value between it and the previous one (or the opening bracket) marks
+  an empty slot, which is dropped — uniformly extending the existing
+  single-leading-comma repair (`[,1]` → `[1]`) to repeated and interior
+  positions, and consistent with `dirty-json`. Divergence from upstream
   [jsonrepair](https://github.com/josdejong/jsonrepair), which as of
-  v3.14.0 mangles `[1,,2]` into `[[1],2]` (its root comma-sequence wrap
-  misfires) and raises on `[1,,,,2]`; commented at the site. Arrays
-  only: an elided comma in an object (`{"a":1,,"b":2}`) still raises
-  rather than guessing a missing key — there is no data to mangle, so
-  the clean error is kept (and pinned in the spec). Differential vs
-  main over a 42-input comma grid: every change is an array with elided
-  commas going from mangle/raise to a correct drop, with objects and
-  all non-elided shapes unchanged. Benchmarks flat.
+  v3.14.0 mangles `[1,,2]`/`[,,1]` into `[[1],2]`/`[[],1]` (its root
+  comma-sequence wrap misfires) and raises on `[1,,,,2]`; commented at
+  the site. Arrays only: an elided comma in an object
+  (`{"a":1,,"b":2}`) still raises rather than guessing a missing key —
+  there is no data to mangle, so the clean error is kept (and pinned in
+  the spec). Differential vs main over a comma grid: every change is an
+  array with elided commas going from mangle/raise to a correct drop,
+  with objects and all non-elided shapes unchanged. Benchmarks flat.
 
 ### 2026-06-17 (0.14.0)
 
