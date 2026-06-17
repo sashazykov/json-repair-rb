@@ -66,6 +66,9 @@ module JSON
     # or a similar construct in objects.
     def skip_ellipsis: () -> void
 
+    # Drop elided empty array slots like [1,,2] -> [1,2].
+    def skip_elided_commas: () -> void
+
     # Parse a string enclosed by double quotes "...". Can contain escaped quotes
     # Repair strings enclosed in single quotes or special quotes
     # Repair an escaped string

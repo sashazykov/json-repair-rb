@@ -434,6 +434,22 @@ module JSON
       end
     end
 
+    # Repair elided empty array slots like [1,,2] or [1,,,,2]. Called right
+    # after a separator comma: skip every further comma (each marks a slot
+    # with no value between it and the previous one), so [1,,2] -> [1,2] and
+    # [1,,,,2] -> [1,2]. Dropping the slot — rather than inserting null —
+    # matches how a leading comma is dropped ([,1] -> [1]). Divergence from
+    # upstream, which mangles [1,,2] into [[1],2] via its root comma-sequence
+    # wrap and raises on [1,,,,2] (as of v3.14.0).
+    def skip_elided_commas
+      loop do
+        parse_whitespace_and_skip_comments
+        break unless @json[@index] == COMMA
+
+        @index += 1
+      end
+    end
+
     # Parse a string enclosed by double quotes "...". Can contain escaped quotes
     # Repair strings enclosed in single quotes or special quotes
     # Repair an escaped string
@@ -857,6 +873,8 @@ module JSON
             processed_comma = parse_character(COMMA)
             # repair missing comma
             @output = insert_before_last_whitespace(@output, ',') unless processed_comma
+            # repair: drop elided empty slots like [1,,2] -> [1,2]
+            skip_elided_commas if processed_comma
           end
 
           skip_ellipsis

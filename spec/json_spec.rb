@@ -504,6 +504,25 @@ RSpec.describe JSON do
         expect(JSON.repair('[ , 1,2,3]')).to eq('[1,2,3]')
       end
 
+      it 'drops elided empty slots in an array' do
+        expect(JSON.repair('[1,,2]')).to eq('[1,2]')
+        expect(JSON.repair('[1,,,,2]')).to eq('[1,2]')
+        expect(JSON.repair('[1, ,2]')).to eq('[1,2]')
+        expect(JSON.repair('[1,/* gap */,2]')).to eq('[1,2]')
+        expect(JSON.repair('["a",,"b"]')).to eq('["a","b"]')
+        # works inside a nested array too
+        expect(JSON.repair('[[1,,2],3]')).to eq('[[1,2],3]')
+        # trailing empty slots collapse with the trailing-comma repair
+        expect(JSON.repair('[1,,]')).to eq('[1]')
+      end
+
+      it 'still raises on elided commas in an object (no silent mangle)' do
+        # arrays drop the slot (above); objects keep raising rather than
+        # guessing a key — a comma with no key:value pair is ambiguous and
+        # there is no data to mangle, so we hold upstream's clean error
+        expect { JSON.repair('{"a":1,,"b":2}') }.to raise_error(JSON::JSONRepairError)
+      end
+
       it 'strips a leading comma from an object' do
         expect(JSON.repair('{,"message": "hi"}')).to eq('{"message":"hi"}')
         expect(JSON.repair('{/* a */,/* b */"message": "hi"}')).to eq('{"message":"hi"}')
