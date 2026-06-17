@@ -825,6 +825,11 @@ RSpec.describe JSON do
         expect { JSON.repair('+') }.to raise_error(JSON::JSONRepairError)
         expect { JSON.repair('[+]') }.to raise_error(JSON::JSONRepairError)
         expect { JSON.repair('+abc') }.to raise_error(JSON::JSONRepairError)
+        # a doubled sign is not a number
+        expect { JSON.repair('++1') }.to raise_error(JSON::JSONRepairError)
+        # the digit/dot-after-plus guard keeps the 0.12.0 empty-mantissa
+        # exponent guard intact: +e5 must raise, not emit an invalid "e0"
+        expect { JSON.repair('+e5') }.to raise_error(JSON::JSONRepairError)
       end
 
       it 'repairs a stray e or E into an unquoted string' do
